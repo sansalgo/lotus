@@ -8,12 +8,14 @@ class HabitCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color? bgColor;
 
   const HabitCard({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.bgColor,
   });
 
   @override
@@ -33,10 +35,14 @@ class HabitCard extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: appColors.lightGray,
+              color: bgColor ?? appColors.lightGray,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 20),
+            child: Icon(
+              icon,
+              size: 20,
+              color: bgColor != null ? Colors.black87 : null,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

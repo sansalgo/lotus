@@ -4,6 +4,10 @@ import 'package:drift/drift.dart' hide Column;
 import '../theme/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../database/app_database.dart';
+import '../utils/color_mapper.dart';
+import '../utils/icon_mapper.dart';
+import '../constants/all_icons.dart';
+import 'package:fuzzy/fuzzy.dart';
 
 class CreateHabitScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -19,8 +23,8 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   final _nameController = TextEditingController();
   final _goalController = TextEditingController();
 
-  String _selectedIcon = 'Man Walking';
-  String _selectedColor = 'Pink';
+  String _selectedIcon = 'acorn';
+  String _selectedColor = 'Peach';
   String _frequency = 'Every Day';
   String _repeat = '1 Times Per Day';
 
@@ -201,14 +205,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                             _buildSectionLabel('Icon'),
                             const SizedBox(height: 8),
                             _buildSelectButton(
-                              icon: const PhosphorIcon(
-                                PhosphorIconsDuotone.personSimpleWalk,
-                                size: 20,
-                              ),
+                              icon: _currentIconDisplay,
                               label: _selectedIcon,
-                              onTap: () {
-                                // TODO: Show icon picker
-                              },
+                              onTap: _showIconPicker,
                             ),
                           ],
                         ),
@@ -225,14 +224,14 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                                 width: 20,
                                 height: 20,
                                 decoration: BoxDecoration(
-                                  color: _getColorFromName(_selectedColor),
+                                  color: ColorMapper.getColorFromName(
+                                    _selectedColor,
+                                  ),
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               label: _selectedColor,
-                              onTap: () {
-                                // TODO: Show color picker
-                              },
+                              onTap: _showColorPicker,
                             ),
                           ],
                         ),
@@ -398,22 +397,156 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     );
   }
 
-  Color _getColorFromName(String colorName) {
-    switch (colorName) {
-      case 'Pink':
-        return const Color(0xFFFFC0CB);
-      case 'Blue':
-        return Colors.blue;
-      case 'Green':
-        return Colors.green;
-      case 'Purple':
-        return Colors.purple;
-      case 'Orange':
-        return Colors.orange;
-      case 'Red':
-        return Colors.red;
-      default:
-        return const Color(0xFFFFC0CB);
+  Widget get _currentIconDisplay {
+    try {
+      final meta = AllIcons.all.firstWhere((i) => i.name == _selectedIcon);
+      return PhosphorIcon(
+        meta.styles['regular'] ?? meta.styles.values.first,
+        size: 20,
+      );
+    } catch (_) {
+      return PhosphorIcon(IconMapper.getIconFromName(_selectedIcon), size: 20);
+    }
+  }
+
+  Future<void> _showIconPicker() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return _IconPickerDialog(initialIcon: _selectedIcon);
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedIcon = result;
+      });
+    }
+  }
+
+  Future<void> _showColorPicker() async {
+    String tempColor = _selectedColor;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.all(24),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Color",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Make changes to your profile here. Click save when you're done.",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      const SizedBox(height: 24),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                        itemCount: ColorMapper.habitColors.length,
+                        itemBuilder: (context, index) {
+                          final entry = ColorMapper.habitColors.entries
+                              .elementAt(index);
+                          final isSelected = tempColor == entry.key;
+                          return GestureDetector(
+                            onTap: () {
+                              setModalState(() {
+                                tempColor = entry.key;
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: entry.value,
+                                borderRadius: BorderRadius.circular(12),
+                                border: isSelected
+                                    ? Border.all(
+                                        color: Colors.black54,
+                                        width: 2,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.black,
+                              side: BorderSide(color: Colors.grey[300]!),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text("Cancel"),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context, tempColor);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text("Done"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedColor = result;
+      });
     }
   }
 
@@ -906,31 +1039,128 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   }
 
   Future<String?> _showRepeatPicker() async {
-    final options = [
-      '1 Times Per Day',
-      '2 Times Per Day',
-      '3 Times Per Day',
-      '4 Times Per Day',
-    ];
-    return showModalBottomSheet<String>(
+    int tempTimes = 1;
+    try {
+      final parts = _repeat.split(' ');
+      if (parts.isNotEmpty) {
+        tempTimes = int.tryParse(parts[0]) ?? 1;
+      }
+    } catch (e) {
+      tempTimes = 1;
+    }
+
+    final result = await showDialog<int>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: options.map((option) {
-              return ListTile(
-                title: Text(option),
-                onTap: () => Navigator.pop(context, option),
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.all(24),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Repeat",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Make changes to your profile here. Click save when you're done.",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: TextFormField(
+                          initialValue: tempTimes.toString(),
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: (val) {
+                            if (val.isNotEmpty) {
+                              tempTimes = int.tryParse(val) ?? 1;
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.black,
+                              side: BorderSide(color: Colors.grey[300]!),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text("Cancel"),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context, tempTimes);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text("Done"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               );
-            }).toList(),
+            },
           ),
         );
       },
     );
+
+    if (result != null) {
+      return '$result Times Per Day';
+    }
+    return null;
   }
 
   Future<String?> _showTimePicker([String? initial]) async {
@@ -970,5 +1200,208 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       return '$hour:$minute';
     }
     return null;
+  }
+}
+
+class _IconPickerDialog extends StatefulWidget {
+  final String initialIcon;
+  const _IconPickerDialog({Key? key, required this.initialIcon})
+    : super(key: key);
+
+  @override
+  State<_IconPickerDialog> createState() => _IconPickerDialogState();
+}
+
+class _IconPickerDialogState extends State<_IconPickerDialog> {
+  final TextEditingController _searchController = TextEditingController();
+
+  static List<IconMetadata>? _cachedAllIcons;
+  static Fuzzy<IconMetadata>? _cachedFuzzy;
+
+  List<IconMetadata> _filteredIcons = [];
+  late String _selectedIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIcon = widget.initialIcon;
+
+    _cachedAllIcons ??= AllIcons.all;
+    _filteredIcons = _cachedAllIcons!;
+
+    _cachedFuzzy ??= Fuzzy<IconMetadata>(
+      _cachedAllIcons!,
+      options: FuzzyOptions(
+        keys: [
+          WeightedKey<IconMetadata>(
+            name: 'name',
+            getter: (IconMetadata i) => i.name,
+            weight: 4,
+          ),
+          WeightedKey<IconMetadata>(
+            name: 'tags',
+            getter: (IconMetadata i) => i.tags.join(' '),
+            weight: 1,
+          ),
+          WeightedKey<IconMetadata>(
+            name: 'categories',
+            getter: (IconMetadata i) => i.categories.join(' '),
+            weight: 1,
+          ),
+        ],
+        threshold: 0.2, // standard fuzzy tolerance
+      ),
+    );
+
+    _searchController.addListener(_onSearch);
+  }
+
+  void _onSearch() {
+    final query = _searchController.text;
+    if (query.isEmpty) {
+      if (_filteredIcons.length != _cachedAllIcons!.length) {
+        setState(() {
+          _filteredIcons = _cachedAllIcons!;
+        });
+      }
+    } else {
+      final results = _cachedFuzzy!.search(query);
+      setState(() {
+        _filteredIcons = results.map((r) => r.item).toList();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: const EdgeInsets.all(24),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Icon",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Make changes to your profile here. Click save when you're done.",
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "Search...",
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 250),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _filteredIcons.length,
+                  itemBuilder: (context, index) {
+                    final iconMeta = _filteredIcons[index];
+                    final isSelected = _selectedIcon == iconMeta.name;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedIcon = iconMeta.name;
+                        });
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.black12
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: PhosphorIcon(
+                          iconMeta.styles['regular'] ??
+                              iconMeta.styles.values.first,
+                          size: 24,
+                          color: Colors.black,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text("Cancel"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context, _selectedIcon);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text("Done"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

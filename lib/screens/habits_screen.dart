@@ -7,6 +7,7 @@ import '../widgets/circle_icon_button.dart';
 import '../widgets/bottom_actions_bar.dart';
 import '../database/app_database.dart';
 import '../utils/icon_mapper.dart';
+import '../utils/color_mapper.dart';
 
 class HabitsScreen extends StatefulWidget {
   final VoidCallback? onNavigateToCreate;
@@ -131,6 +132,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               icon: IconMapper.getIconFromName(habit.iconName),
                               title: habit.name,
                               subtitle: habit.goal ?? 'No goal set',
+                              bgColor: ColorMapper.getColorFromName(
+                                habit.colorName,
+                              ),
                             );
                           },
                         );
