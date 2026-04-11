@@ -11,8 +11,13 @@ import '../utils/color_mapper.dart';
 
 class HabitsScreen extends StatefulWidget {
   final VoidCallback? onNavigateToCreate;
+  final void Function(Habit)? onNavigateToHabit;
 
-  const HabitsScreen({super.key, this.onNavigateToCreate});
+  const HabitsScreen({
+    super.key,
+    this.onNavigateToCreate,
+    this.onNavigateToHabit,
+  });
 
   @override
   State<HabitsScreen> createState() => _HabitsScreenState();
@@ -128,12 +133,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final habit = habits[index];
-                            return HabitCard(
-                              icon: IconMapper.getIconFromName(habit.iconName),
-                              title: habit.name,
-                              subtitle: habit.goal ?? 'No goal set',
-                              bgColor: ColorMapper.getColorFromName(
-                                habit.colorName,
+                            return GestureDetector(
+                              onTap: () =>
+                                  widget.onNavigateToHabit?.call(habit),
+                              child: HabitCard(
+                                icon: IconMapper.getIconFromName(
+                                  habit.iconName,
+                                ),
+                                title: habit.name,
+                                subtitle: habit.goal ?? 'No goal set',
+                                bgColor: ColorMapper.getColorFromName(
+                                  habit.colorName,
+                                ),
                               ),
                             );
                           },

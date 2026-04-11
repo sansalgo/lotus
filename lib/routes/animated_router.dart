@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../database/app_database.dart';
 import '../screens/habits_screen.dart';
 import '../screens/create_habit_screen.dart';
+import '../screens/habit_detail_screen.dart';
 
 class AnimatedRouter extends StatefulWidget {
   const AnimatedRouter({super.key});
@@ -11,6 +13,7 @@ class AnimatedRouter extends StatefulWidget {
 
 class _AnimatedRouterState extends State<AnimatedRouter> {
   String _currentRoute = '/';
+  Habit? _selectedHabit;
 
   void _navigateTo(String route) {
     setState(() {
@@ -18,9 +21,29 @@ class _AnimatedRouterState extends State<AnimatedRouter> {
     });
   }
 
+  void _navigateToHabit(Habit habit) {
+    setState(() {
+      _currentRoute = '/detail';
+      _selectedHabit = habit;
+    });
+  }
+
+  void _navigateToEdit() {
+    setState(() {
+      _currentRoute = '/edit';
+    });
+  }
+
+  void _navigateBackToDetail() {
+    setState(() {
+      _currentRoute = '/detail';
+    });
+  }
+
   void _navigateBack() {
     setState(() {
       _currentRoute = '/';
+      _selectedHabit = null;
     });
   }
 
@@ -28,7 +51,11 @@ class _AnimatedRouterState extends State<AnimatedRouter> {
   Widget build(BuildContext context) {
     return _RouterDelegate(
       currentRoute: _currentRoute,
+      selectedHabit: _selectedHabit,
       onNavigateTo: _navigateTo,
+      onNavigateToHabit: _navigateToHabit,
+      onNavigateToEdit: _navigateToEdit,
+      onNavigateBackToDetail: _navigateBackToDetail,
       onNavigateBack: _navigateBack,
     );
   }
@@ -36,29 +63,52 @@ class _AnimatedRouterState extends State<AnimatedRouter> {
 
 class _RouterDelegate extends StatelessWidget {
   final String currentRoute;
+  final Habit? selectedHabit;
   final void Function(String) onNavigateTo;
+  final void Function(Habit) onNavigateToHabit;
+  final void Function() onNavigateToEdit;
+  final void Function() onNavigateBackToDetail;
   final void Function() onNavigateBack;
 
   const _RouterDelegate({
     required this.currentRoute,
+    required this.selectedHabit,
     required this.onNavigateTo,
+    required this.onNavigateToHabit,
+    required this.onNavigateToEdit,
+    required this.onNavigateBackToDetail,
     required this.onNavigateBack,
   });
 
   @override
   Widget build(BuildContext context) {
     Widget currentScreen;
-    
+
     switch (currentRoute) {
       case '/create':
         currentScreen = CreateHabitScreen(
           onBack: onNavigateBack,
         );
         break;
+      case '/detail':
+        currentScreen = HabitDetailScreen(
+          habit: selectedHabit!,
+          onBack: onNavigateBack,
+          onEdit: onNavigateToEdit,
+        );
+        break;
+      case '/edit':
+        currentScreen = CreateHabitScreen(
+          initialHabit: selectedHabit,
+          onBack: onNavigateBackToDetail,
+          onSaved: onNavigateBack,
+        );
+        break;
       case '/':
       default:
         currentScreen = HabitsScreen(
           onNavigateToCreate: () => onNavigateTo('/create'),
+          onNavigateToHabit: onNavigateToHabit,
         );
         break;
     }

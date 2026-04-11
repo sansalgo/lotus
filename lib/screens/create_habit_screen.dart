@@ -11,8 +11,15 @@ import 'package:fuzzy/fuzzy.dart';
 
 class CreateHabitScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final VoidCallback? onSaved;
+  final Habit? initialHabit;
 
-  const CreateHabitScreen({super.key, this.onBack});
+  const CreateHabitScreen({
+    super.key,
+    this.onBack,
+    this.onSaved,
+    this.initialHabit,
+  });
 
   @override
   State<CreateHabitScreen> createState() => _CreateHabitScreenState();
@@ -42,8 +49,31 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   void initState() {
     super.initState();
     _database = AppDatabase();
-    _selectedWeekDays = [_getTodayAbbreviation()];
-    _reminders = ['12:00']; // Example default or empty
+
+    final h = widget.initialHabit;
+    if (h != null) {
+      _nameController.text = h.name;
+      _goalController.text = h.goal ?? '';
+      _selectedIcon = h.iconName;
+      _selectedColor = h.colorName;
+      _frequency = h.frequency;
+      _repeat = h.repeat;
+      _frequencyInterval = h.frequencyInterval;
+      _frequencyUnit = h.frequencyUnit;
+      _selectedWeekDays = h.frequencyDays
+              ?.split(',')
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [_getTodayAbbreviation()];
+      _reminders = h.reminders
+              ?.split(',')
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [];
+    } else {
+      _selectedWeekDays = [_getTodayAbbreviation()];
+      _reminders = ['12:00'];
+    }
   }
 
   String _getTodayAbbreviation() {
@@ -68,12 +98,12 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
   Future<void> _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
-      final habit = HabitsCompanion(
+      final companion = HabitsCompanion(
         name: Value(_nameController.text),
         goal: Value(_goalController.text.isEmpty ? null : _goalController.text),
         iconName: Value(_selectedIcon),
         colorName: Value(_selectedColor),
-        frequency: Value(_frequency), // Summary string
+        frequency: Value(_frequency),
         repeat: Value(_repeat),
         reminders: Value(_reminders.isEmpty ? null : _reminders.join(',')),
         frequencyInterval: Value(_frequencyInterval),
@@ -85,11 +115,15 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         ),
       );
 
-      await _database.into(_database.habits).insert(habit);
-
-      if (mounted && widget.onBack != null) {
-        widget.onBack!();
+      if (widget.initialHabit != null) {
+        await (_database.update(_database.habits)
+              ..where((t) => t.id.equals(widget.initialHabit!.id)))
+            .write(companion);
+      } else {
+        await _database.into(_database.habits).insert(companion);
       }
+
+      if (mounted) (widget.onSaved ?? widget.onBack)?.call();
     }
   }
 
@@ -119,9 +153,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                         constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 16),
-                      const Text(
-                        'Create',
-                        style: TextStyle(
+                      Text(
+                        widget.initialHabit != null ? 'Edit' : 'Create',
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
@@ -283,9 +317,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Submit',
-                        style: TextStyle(
+                      child: Text(
+                        widget.initialHabit != null ? 'Save changes' : 'Submit',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
