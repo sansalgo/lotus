@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'routes/animated_router.dart';
+import 'screens/habits_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   runApp(const MainApp());
 }
 
@@ -14,7 +17,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const AnimatedRouter(),
+      home: const HabitsScreen(),
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/habits_screen.dart';
-import '../screens/create_habit_screen.dart';
+import '../screens/habit_form_screen.dart';
 
 /// Route names
 enum AppRoute {
@@ -19,7 +19,7 @@ class AppRouter {
       case '/':
         return MaterialPageRoute(builder: (_) => const HabitsScreen());
       case '/create':
-        return MaterialPageRoute(builder: (_) => const CreateHabitScreen());
+        return MaterialPageRoute(builder: (_) => const HabitFormScreen());
       default:
         return MaterialPageRoute(builder: (_) => const HabitsScreen());
     }
