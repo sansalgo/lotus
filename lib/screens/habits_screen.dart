@@ -10,6 +10,7 @@ import '../database/app_database.dart';
 import '../utils/icon_mapper.dart';
 import '../utils/color_mapper.dart';
 import '../routes/slide_page_route.dart';
+import '../services/notification_service.dart';
 import 'habit_detail_screen.dart';
 import 'habit_form_screen.dart';
 
@@ -34,6 +35,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     _completionSub = _database.watchAllCompletions().listen((completions) {
       if (mounted) setState(() => _allCompletions = completions);
     });
+    NotificationService.requestPermissions().catchError((_) {});
   }
 
   @override
