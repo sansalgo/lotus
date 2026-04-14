@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:drift/drift.dart' hide Column;
-import '../theme/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../database/app_database.dart';
 import '../utils/color_mapper.dart';
 import '../utils/icon_mapper.dart';
 import '../constants/all_icons.dart';
+import '../widgets/circle_icon_button.dart';
+import '../services/notification_service.dart';
 import 'package:fuzzy/fuzzy.dart';
 
-class CreateHabitScreen extends StatefulWidget {
-  final VoidCallback? onBack;
-  final VoidCallback? onSaved;
+class HabitFormScreen extends StatefulWidget {
   final Habit? initialHabit;
 
-  const CreateHabitScreen({
+  const HabitFormScreen({
     super.key,
-    this.onBack,
-    this.onSaved,
     this.initialHabit,
   });
 
   @override
-  State<CreateHabitScreen> createState() => _CreateHabitScreenState();
+  State<HabitFormScreen> createState() => _HabitFormScreenState();
 }
 
-class _CreateHabitScreenState extends State<CreateHabitScreen> {
+class _HabitFormScreenState extends State<HabitFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _goalController = TextEditingController();
@@ -72,7 +69,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
           [];
     } else {
       _selectedWeekDays = [_getTodayAbbreviation()];
-      _reminders = ['12:00'];
+      _reminders = [];
     }
   }
 
@@ -96,6 +93,12 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     super.dispose();
   }
 
+  /// Parses the numeric count from a repeat string like "3 Times Per Day".
+  int get _repeatCount {
+    final parts = _repeat.split(' ');
+    return int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 1;
+  }
+
   Future<void> _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
       final companion = HabitsCompanion(
@@ -105,6 +108,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         colorName: Value(_selectedColor),
         frequency: Value(_frequency),
         repeat: Value(_repeat),
+        repeatCount: Value(_repeatCount),
         reminders: Value(_reminders.isEmpty ? null : _reminders.join(',')),
         frequencyInterval: Value(_frequencyInterval),
         frequencyUnit: Value(_frequencyUnit),
@@ -116,20 +120,37 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       );
 
       if (widget.initialHabit != null) {
+        final habitId = widget.initialHabit!.id;
         await (_database.update(_database.habits)
-              ..where((t) => t.id.equals(widget.initialHabit!.id)))
+              ..where((t) => t.id.equals(habitId)))
             .write(companion);
+        final updated = await (_database.select(_database.habits)
+              ..where((t) => t.id.equals(habitId)))
+            .getSingle();
+        await NotificationService.scheduleHabitReminders(updated);
       } else {
-        await _database.into(_database.habits).insert(companion);
+        final habitId =
+            await _database.into(_database.habits).insert(companion);
+        final inserted = await (_database.select(_database.habits)
+              ..where((t) => t.id.equals(habitId)))
+            .getSingle();
+        await NotificationService.scheduleHabitReminders(inserted);
       }
 
-      if (mounted) (widget.onSaved ?? widget.onBack)?.call();
+      if (mounted) {
+        if (widget.initialHabit != null) {
+          // After editing, pop back to the root (HabitsScreen) so the
+          // detail screen re-opens with the freshest habit data.
+          Navigator.popUntil(context, (route) => route.isFirst);
+        } else {
+          Navigator.pop(context);
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.appColors;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -146,11 +167,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                   // Header
                   Row(
                     children: [
-                      IconButton(
-                        icon: const PhosphorIcon(PhosphorIconsBold.arrowLeft),
-                        onPressed: widget.onBack,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      CircleIconButton(
+                        icon: PhosphorIconsBold.arrowLeft,
+                        onTap: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 16),
                       Text(
@@ -170,19 +189,19 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                      hintText: 'John Doe',
+                      hintText: 'e.g. Morning Run',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: appColors.border),
+                        borderSide: BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: appColors.border),
+                        borderSide: BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: appColors.primary,
+                          color: AppColors.primary,
                           width: 2,
                         ),
                       ),
@@ -206,19 +225,19 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                     controller: _goalController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Add any additional comments',
+                      hintText: 'e.g. Stay consistent and build a healthier lifestyle',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: appColors.border),
+                        borderSide: BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: appColors.border),
+                        borderSide: BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: appColors.primary,
+                          color: AppColors.primary,
                           width: 2,
                         ),
                       ),
@@ -240,7 +259,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                             const SizedBox(height: 8),
                             _buildSelectButton(
                               icon: _currentIconDisplay,
-                              label: _selectedIcon,
+                              label: _iconToTitleCase(_selectedIcon),
                               onTap: _showIconPicker,
                             ),
                           ],
@@ -309,7 +328,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                     child: ElevatedButton(
                       onPressed: _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: appColors.primary,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -337,13 +356,12 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   }
 
   Widget _buildSectionLabel(String label) {
-    final appColors = context.appColors;
     return Text(
       label,
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: appColors.primary,
+        color: AppColors.primary,
       ),
     );
   }
@@ -353,7 +371,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    final appColors = context.appColors;
 
     return InkWell(
       onTap: onTap,
@@ -361,7 +378,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: appColors.border),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -371,6 +388,8 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
             Expanded(
               child: Text(
                 label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -389,7 +408,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     required String value,
     required VoidCallback onTap,
   }) {
-    final appColors = context.appColors;
 
     return InkWell(
       onTap: onTap,
@@ -397,7 +415,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: appColors.border),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -415,7 +433,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: appColors.secondary,
+                  color: AppColors.secondary,
                 ),
               ),
             ),
@@ -423,12 +441,21 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
             PhosphorIcon(
               PhosphorIconsBold.caretRight,
               size: 16,
-              color: appColors.secondary,
+              color: AppColors.secondary,
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Converts a kebab-case icon name (e.g. "right-arrow") to Title Case ("Right Arrow").
+  static String _iconToTitleCase(String name) {
+    if (name.isEmpty) return name;
+    return name
+        .split('-')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
   }
 
   Widget get _currentIconDisplay {
@@ -489,7 +516,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Make changes to your profile here. Click save when you're done.",
+                        "Pick a color to personalize this habit.",
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 24),
@@ -624,7 +651,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Make changes to your schedule here. Click done when you're finished.",
+                        "Set how often you want to perform this habit.",
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 24),
@@ -884,7 +911,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Make changes to your profile here. Click save when you're done.",
+                        "Add times when you'd like to be reminded to complete this habit.",
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 24),
@@ -1111,7 +1138,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Make changes to your profile here. Click save when you're done.",
+                        "Set how many times you want to complete this habit per period.",
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 24),
@@ -1334,7 +1361,7 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Make changes to your profile here. Click save when you're done.",
+              "Choose an icon that best represents this habit.",
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 16),

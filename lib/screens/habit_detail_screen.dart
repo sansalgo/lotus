@@ -1,21 +1,20 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../database/app_database.dart';
+import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import '../utils/color_mapper.dart';
 import '../widgets/circle_icon_button.dart';
+import '../routes/slide_page_route.dart';
+import 'habit_form_screen.dart';
 
 class HabitDetailScreen extends StatefulWidget {
   final Habit habit;
-  final VoidCallback onBack;
-  final VoidCallback? onEdit;
 
   const HabitDetailScreen({
     super.key,
     required this.habit,
-    required this.onBack,
-    this.onEdit,
   });
 
   @override
@@ -37,37 +36,122 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     super.dispose();
   }
 
+  // ── Data helpers ──────────────────────────────────────────────────────────
+
+  Stream<List<HabitCompletion>> get _completionStream =>
+      (_database.select(_database.habitCompletions)
+            ..where((c) => c.habitId.equals(widget.habit.id)))
+          .watch();
+
   List<String> get _chips {
-    final chips = <String>[];
-
-    chips.add(widget.habit.frequency.toUpperCase());
-
-    final parts = widget.habit.repeat.split(' ');
-    final count = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
-    if (count != null) {
-      chips.add('$count ${count == 1 ? 'REP' : 'REPS'}');
-    } else {
-      chips.add(widget.habit.repeat.toUpperCase());
-    }
-
-    return chips;
+    final count = widget.habit.repeatCount;
+    return [
+      widget.habit.frequency.toUpperCase(),
+      '$count ${count == 1 ? 'REP' : 'REPS'}',
+    ];
   }
 
   List<String> get _reminderTimes {
-    final times = <String>[];
-    if (widget.habit.reminders != null && widget.habit.reminders!.isNotEmpty) {
-      times.addAll(
-        widget.habit.reminders!
-            .split(',')
-            .map((t) => t.trim())
-            .where((t) => t.isNotEmpty),
-      );
-    } else if (widget.habit.reminderTime != null &&
-        widget.habit.reminderTime!.isNotEmpty) {
-      times.add(widget.habit.reminderTime!);
+    if (widget.habit.reminders != null &&
+        widget.habit.reminders!.isNotEmpty) {
+      return widget.habit.reminders!
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
     }
-    return times;
+    if (widget.habit.reminderTime != null &&
+        widget.habit.reminderTime!.isNotEmpty) {
+      return [widget.habit.reminderTime!];
+    }
+    return [];
   }
+
+  bool _periodCompleted(HabitCompletion c) =>
+      c.completedReps >= widget.habit.repeatCount;
+
+  DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  // ── Stat computations ─────────────────────────────────────────────────────
+
+  int _streak(List<HabitCompletion> all) {
+    final doneDays = all
+        .where(_periodCompleted)
+        .map((c) => _dayOnly(c.periodDate))
+        .toSet();
+    final today = _dayOnly(DateTime.now());
+    int streak = 0;
+    DateTime check = today;
+    while (doneDays.contains(check)) {
+      streak++;
+      check = check.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  int _bestStreak(List<HabitCompletion> all) {
+    final dates = all
+        .where(_periodCompleted)
+        .map((c) => _dayOnly(c.periodDate))
+        .toList()
+      ..sort();
+    if (dates.isEmpty) return 0;
+    int best = 1, current = 1;
+    for (int i = 1; i < dates.length; i++) {
+      if (dates[i].difference(dates[i - 1]).inDays == 1) {
+        current++;
+        if (current > best) best = current;
+      } else if (dates[i] != dates[i - 1]) {
+        current = 1;
+      }
+    }
+    return best;
+  }
+
+  int _finished(List<HabitCompletion> all) =>
+      all.where(_periodCompleted).length;
+
+  int _finishedThisWeek(List<HabitCompletion> all) {
+    final now = DateTime.now();
+    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
+    return all.where((c) {
+      final d = _dayOnly(c.periodDate);
+      return _periodCompleted(c) && !d.isBefore(weekStart);
+    }).length;
+  }
+
+  /// Total periods from creation date to today (inclusive).
+  int _totalPeriods() {
+    final created = _dayOnly(widget.habit.createdAt);
+    final today = _dayOnly(DateTime.now());
+    return math.max(1, today.difference(created).inDays + 1);
+  }
+
+  String _completionRate(List<HabitCompletion> all) {
+    final rate = (_finished(all) / _totalPeriods() * 100).round();
+    return '$rate%';
+  }
+
+  /// completedReps for each of the 7 days of the current week (Mon index 0).
+  List<double> _weekBarValues(List<HabitCompletion> all) {
+    final now = DateTime.now();
+    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
+    final total = widget.habit.repeatCount;
+    return List.generate(7, (i) {
+      final day = weekStart.add(Duration(days: i));
+      final comp = all.where((c) => _dayOnly(c.periodDate) == day).firstOrNull;
+      if (comp == null || total == 0) return 0.0;
+      return (comp.completedReps / total).clamp(0.0, 1.0);
+    });
+  }
+
+  double _avgReps(List<HabitCompletion> all) {
+    if (all.isEmpty) return 0;
+    final total = all.fold<int>(0, (s, c) => s + c.completedReps);
+    return total / all.length;
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
 
   Future<void> _deleteHabit() async {
     final confirmed = await showDialog<bool>(
@@ -78,7 +162,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           'Delete Habit',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        content: Text('Delete "${widget.habit.name}"? This cannot be undone.'),
+        content: Text(
+          'Delete "${widget.habit.name}"? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -95,12 +181,15 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
     );
     if (confirmed == true && mounted) {
+      await NotificationService.cancelHabitReminders(widget.habit.id);
       await (_database.delete(_database.habits)
             ..where((t) => t.id.equals(widget.habit.id)))
           .go();
-      widget.onBack();
+      if (mounted) Navigator.pop(context);
     }
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -112,23 +201,30 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           children: [
             _buildHeader(context),
             Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildChips(),
-                      const SizedBox(height: 20),
-                      _buildStatCards(),
-                      const SizedBox(height: 20),
-                      _buildCalendar(),
-                      const SizedBox(height: 24),
-                      _buildStatistics(),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+              child: StreamBuilder<List<HabitCompletion>>(
+                stream: _completionStream,
+                initialData: const [],
+                builder: (context, snapshot) {
+                  final completions = snapshot.data ?? [];
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildChips(),
+                          const SizedBox(height: 20),
+                          _buildStatCards(completions),
+                          const SizedBox(height: 20),
+                          _buildCalendar(completions),
+                          const SizedBox(height: 24),
+                          _buildStatistics(completions),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -136,6 +232,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
     );
   }
+
+  // ── Header ────────────────────────────────────────────────────────────────
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
@@ -147,15 +245,23 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             children: [
               CircleIconButton(
                 icon: PhosphorIconsBold.arrowLeft,
-                onTap: widget.onBack,
+                onTap: () => Navigator.pop(context),
               ),
               const Spacer(),
               CircleIconButton(
                 icon: PhosphorIconsBold.pencilSimple,
-                onTap: widget.onEdit,
+                onTap: () => Navigator.push(
+                  context,
+                  SlidePageRoute(
+                    page: HabitFormScreen(initialHabit: widget.habit),
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
-              _MoreMenuButton(onDelete: _deleteHabit),
+              CircleIconButton(
+                icon: PhosphorIconsBold.trash,
+                onTap: _deleteHabit,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -172,6 +278,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
     );
   }
+
+  // ── Chips ─────────────────────────────────────────────────────────────────
 
   Widget _buildChips() {
     return SingleChildScrollView(
@@ -191,8 +299,16 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
-  Widget _buildStatCards() {
+  // ── Stat cards ────────────────────────────────────────────────────────────
+
+  Widget _buildStatCards(List<HabitCompletion> completions) {
     final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
+    final streak = _streak(completions);
+    final best = _bestStreak(completions);
+    final finished = _finished(completions);
+    final thisWeek = _finishedThisWeek(completions);
+    final total = _totalPeriods();
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
@@ -205,9 +321,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               child: _buildStatItem(
                 icon: PhosphorIconsBold.flame,
                 iconColor: habitColor,
-                value: '0',
+                value: '$streak',
                 label: 'Streak',
-                sub: 'Best: 0',
+                sub: 'Best: $best',
               ),
             ),
             VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
@@ -215,9 +331,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               child: _buildStatItem(
                 icon: PhosphorIconsBold.checkCircle,
                 iconColor: habitColor,
-                value: '0',
+                value: '$finished',
                 label: 'Finished',
-                sub: 'This week: 0',
+                sub: 'This week: $thisWeek',
               ),
             ),
             VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
@@ -225,9 +341,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               child: _buildStatItem(
                 icon: PhosphorIconsBold.chartBar,
                 iconColor: habitColor,
-                value: '0%',
+                value: _completionRate(completions),
                 label: 'Completion',
-                sub: '0/0 done',
+                sub: '$finished/$total done',
               ),
             ),
           ],
@@ -248,8 +364,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // PhosphorIcon(icon, size: 18, color: iconColor),
-          // const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(
@@ -262,10 +376,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 2),
           Text(
@@ -277,11 +388,20 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
-  Widget _buildCalendar() {
+  // ── Calendar ──────────────────────────────────────────────────────────────
+
+  Widget _buildCalendar(List<HabitCompletion> completions) {
     final now = DateTime.now();
+    final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
+
+    // Set of days in current month that are fully completed
+    final doneDays = completions
+        .where(_periodCompleted)
+        .map((c) => c.periodDate.day)
+        .toSet();
+
     return Container(
       decoration: BoxDecoration(
-        // color: AppColors.lightGray,
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(10),
       ),
@@ -314,16 +434,20 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 .toList(),
           ),
           const SizedBox(height: 8),
-          ..._buildCalendarRows(now),
+          ..._buildCalendarRows(now, doneDays, habitColor),
         ],
       ),
     );
   }
 
-  List<Widget> _buildCalendarRows(DateTime now) {
+  List<Widget> _buildCalendarRows(
+    DateTime now,
+    Set<int> doneDays,
+    Color habitColor,
+  ) {
     final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
     final firstWeekday = DateTime(now.year, now.month, 1).weekday;
-    // Dart weekday: Mon=1..Sat=6, Sun=7. Convert to Sun=0..Sat=6.
+    // Mon=1..Sun=7 → Sun=0..Sat=6 offset
     final startOffset = firstWeekday == 7 ? 0 : firstWeekday;
 
     final rows = <Widget>[];
@@ -335,7 +459,12 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         if (d < 1 || d > daysInMonth) {
           return const SizedBox(width: 32, height: 32);
         }
-        return _CalendarCell(day: d, isToday: d == now.day);
+        return _CalendarCell(
+          day: d,
+          isToday: d == now.day,
+          isDone: doneDays.contains(d),
+          habitColor: habitColor,
+        );
       });
       rows.add(
         Padding(
@@ -351,11 +480,14 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return rows;
   }
 
-  Widget _buildStatistics() {
+  // ── Statistics ────────────────────────────────────────────────────────────
+
+  Widget _buildStatistics(List<HabitCompletion> completions) {
     final now = DateTime.now();
-    final daysFromSunday = now.weekday == 7 ? 0 : now.weekday;
-    final weekStart = now.subtract(Duration(days: daysFromSunday));
+    // Week runs Mon–Sun
+    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
     final weekEnd = weekStart.add(const Duration(days: 6));
+    final avg = _avgReps(completions);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,8 +505,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.lightGray,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border)
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -402,26 +534,29 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                       ),
                     ],
                   ),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '0.0 reps',
-                        style: TextStyle(
+                        '${avg.toStringAsFixed(1)} reps',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Text(
+                      const Text(
                         'Avg. repeats',
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black54,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildBarChart(),
+              _buildBarChart(completions),
             ],
           ),
         ),
@@ -429,19 +564,22 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
-  Widget _buildBarChart() {
-    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  Widget _buildBarChart(List<HabitCompletion> completions) {
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const maxBarHeight = 56.0;
-    // Placeholder values — no completion tracking yet
-    const values = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    final barValues = _weekBarValues(completions);
     final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
+    final now = DateTime.now();
+    // current day index in Mon-based week (0=Mon … 6=Sun)
+    final todayIndex = now.weekday - 1;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: List.generate(7, (i) {
-        final barHeight = values[i] * maxBarHeight;
+        final barHeight = barValues[i] * maxBarHeight;
         final isEmpty = barHeight < 1;
+        final isToday = i == todayIndex;
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -456,10 +594,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             const SizedBox(height: 6),
             Text(
               days[i],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black45,
+                fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                color: isToday ? Colors.black87 : Colors.black45,
               ),
             ),
           ],
@@ -467,6 +605,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       }),
     );
   }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
 
   static String _monthName(int month) {
     const names = [
@@ -485,61 +625,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 }
 
-// ── Private widgets ──────────────────────────────────────────────────────────
-
-class _MoreMenuButton extends StatelessWidget {
-  final VoidCallback onDelete;
-
-  const _MoreMenuButton({required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      elevation: 8,
-      onSelected: (value) {
-        if (value == 'delete') onDelete();
-      },
-      itemBuilder: (_) => const [
-        PopupMenuItem(
-          value: 'archive',
-          child: Text(
-            'Pause & Archive',
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-        ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Text(
-            'Delete',
-            style: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Theme.of(context).extension<AppColorScheme>()!.border,
-          ),
-        ),
-        child: PhosphorIcon(PhosphorIconsBold.dotsThreeVertical, size: 18),
-      ),
-    );
-  }
-}
+// ── Private widgets ───────────────────────────────────────────────────────────
 
 class _Chip extends StatelessWidget {
   final String label;
-
   const _Chip({required this.label});
 
   @override
@@ -563,10 +652,8 @@ class _Chip extends StatelessWidget {
   }
 }
 
-
 class _ReminderChip extends StatefulWidget {
   final List<String> times;
-
   const _ReminderChip({required this.times});
 
   @override
@@ -621,7 +708,6 @@ class _ReminderChipState extends State<_ReminderChip> {
     );
 
     if (!hasMore) return chip;
-
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: chip,
@@ -632,28 +718,42 @@ class _ReminderChipState extends State<_ReminderChip> {
 class _CalendarCell extends StatelessWidget {
   final int day;
   final bool isToday;
+  final bool isDone;
+  final Color habitColor;
 
-  const _CalendarCell({required this.day, required this.isToday});
+  const _CalendarCell({
+    required this.day,
+    required this.isToday,
+    required this.isDone,
+    required this.habitColor,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Color? bg;
+    Color textColor = Colors.black87;
+
+    if (isToday) {
+      bg = AppColors.primary;
+      textColor = Colors.white;
+    } else if (isDone) {
+      bg = habitColor.withValues(alpha: 0.25);
+    }
+
     return Container(
       width: 32,
       height: 32,
       alignment: Alignment.center,
-      decoration: isToday
-          ?  BoxDecoration(
-              color: AppColors.primary,
-              // shape: BoxShape.circle,
-              borderRadius: BorderRadius.circular(10)
-            )
+      decoration: bg != null
+          ? BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10))
           : null,
       child: Text(
         '$day',
         style: TextStyle(
           fontSize: 15,
-          fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-          color: isToday ? Colors.white : Colors.black87,
+          fontWeight:
+              (isToday || isDone) ? FontWeight.w700 : FontWeight.w500,
+          color: textColor,
         ),
       ),
     );
