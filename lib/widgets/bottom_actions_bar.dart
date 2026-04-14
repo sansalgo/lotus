@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotus/theme/app_theme.dart';
+import 'package:lotus/theme/app_colors.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class BottomActionsBar extends StatelessWidget {
@@ -7,7 +7,6 @@ class BottomActionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.appColors;
     return Positioned(
       left: 0,
       right: 0,
@@ -18,10 +17,10 @@ class BottomActionsBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: appColors.border),
+            border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),

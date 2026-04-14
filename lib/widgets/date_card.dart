@@ -51,13 +51,12 @@ class DateCard extends StatelessWidget {
       );
     });
 
-    final appColors = context.appColors;
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: appColors.border),
+        border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Column(
