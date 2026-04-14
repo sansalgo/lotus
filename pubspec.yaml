@@ -16,6 +16,9 @@ dependencies:
   path_provider: ^2.1.1
   path: ^1.8.3
   fuzzy: ^0.5.1
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.4
+  flutter_timezone: ^1.0.4
 
 dev_dependencies:
   flutter_test:
@@ -23,6 +26,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.14.1
   build_runner: ^2.4.7
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
