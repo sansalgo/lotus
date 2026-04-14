@@ -158,6 +158,18 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _repeatCountMeta = const VerificationMeta(
+    'repeatCount',
+  );
+  @override
+  late final GeneratedColumn<int> repeatCount = GeneratedColumn<int>(
+    'repeat_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -173,6 +185,7 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     frequencyUnit,
     frequencyDays,
     reminders,
+    repeatCount,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -275,6 +288,15 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         reminders.isAcceptableOrUnknown(data['reminders']!, _remindersMeta),
       );
     }
+    if (data.containsKey('repeat_count')) {
+      context.handle(
+        _repeatCountMeta,
+        repeatCount.isAcceptableOrUnknown(
+          data['repeat_count']!,
+          _repeatCountMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -336,6 +358,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.string,
         data['${effectivePrefix}reminders'],
       ),
+      repeatCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}repeat_count'],
+      )!,
     );
   }
 
@@ -359,6 +385,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   final String frequencyUnit;
   final String? frequencyDays;
   final String? reminders;
+  final int repeatCount;
   const Habit({
     required this.id,
     required this.name,
@@ -373,6 +400,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     required this.frequencyUnit,
     this.frequencyDays,
     this.reminders,
+    required this.repeatCount,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -398,6 +426,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     if (!nullToAbsent || reminders != null) {
       map['reminders'] = Variable<String>(reminders);
     }
+    map['repeat_count'] = Variable<int>(repeatCount);
     return map;
   }
 
@@ -422,6 +451,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       reminders: reminders == null && nullToAbsent
           ? const Value.absent()
           : Value(reminders),
+      repeatCount: Value(repeatCount),
     );
   }
 
@@ -444,6 +474,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       frequencyUnit: serializer.fromJson<String>(json['frequencyUnit']),
       frequencyDays: serializer.fromJson<String?>(json['frequencyDays']),
       reminders: serializer.fromJson<String?>(json['reminders']),
+      repeatCount: serializer.fromJson<int>(json['repeatCount']),
     );
   }
   @override
@@ -463,6 +494,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       'frequencyUnit': serializer.toJson<String>(frequencyUnit),
       'frequencyDays': serializer.toJson<String?>(frequencyDays),
       'reminders': serializer.toJson<String?>(reminders),
+      'repeatCount': serializer.toJson<int>(repeatCount),
     };
   }
 
@@ -480,6 +512,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     String? frequencyUnit,
     Value<String?> frequencyDays = const Value.absent(),
     Value<String?> reminders = const Value.absent(),
+    int? repeatCount,
   }) => Habit(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -496,6 +529,7 @@ class Habit extends DataClass implements Insertable<Habit> {
         ? frequencyDays.value
         : this.frequencyDays,
     reminders: reminders.present ? reminders.value : this.reminders,
+    repeatCount: repeatCount ?? this.repeatCount,
   );
   Habit copyWithCompanion(HabitsCompanion data) {
     return Habit(
@@ -520,6 +554,9 @@ class Habit extends DataClass implements Insertable<Habit> {
           ? data.frequencyDays.value
           : this.frequencyDays,
       reminders: data.reminders.present ? data.reminders.value : this.reminders,
+      repeatCount: data.repeatCount.present
+          ? data.repeatCount.value
+          : this.repeatCount,
     );
   }
 
@@ -538,7 +575,8 @@ class Habit extends DataClass implements Insertable<Habit> {
           ..write('frequencyInterval: $frequencyInterval, ')
           ..write('frequencyUnit: $frequencyUnit, ')
           ..write('frequencyDays: $frequencyDays, ')
-          ..write('reminders: $reminders')
+          ..write('reminders: $reminders, ')
+          ..write('repeatCount: $repeatCount')
           ..write(')'))
         .toString();
   }
@@ -558,6 +596,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     frequencyUnit,
     frequencyDays,
     reminders,
+    repeatCount,
   );
   @override
   bool operator ==(Object other) =>
@@ -575,7 +614,8 @@ class Habit extends DataClass implements Insertable<Habit> {
           other.frequencyInterval == this.frequencyInterval &&
           other.frequencyUnit == this.frequencyUnit &&
           other.frequencyDays == this.frequencyDays &&
-          other.reminders == this.reminders);
+          other.reminders == this.reminders &&
+          other.repeatCount == this.repeatCount);
 }
 
 class HabitsCompanion extends UpdateCompanion<Habit> {
@@ -592,6 +632,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<String> frequencyUnit;
   final Value<String?> frequencyDays;
   final Value<String?> reminders;
+  final Value<int> repeatCount;
   const HabitsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -606,6 +647,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.frequencyUnit = const Value.absent(),
     this.frequencyDays = const Value.absent(),
     this.reminders = const Value.absent(),
+    this.repeatCount = const Value.absent(),
   });
   HabitsCompanion.insert({
     this.id = const Value.absent(),
@@ -621,6 +663,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.frequencyUnit = const Value.absent(),
     this.frequencyDays = const Value.absent(),
     this.reminders = const Value.absent(),
+    this.repeatCount = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Habit> custom({
     Expression<int>? id,
@@ -636,6 +679,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Expression<String>? frequencyUnit,
     Expression<String>? frequencyDays,
     Expression<String>? reminders,
+    Expression<int>? repeatCount,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -651,6 +695,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       if (frequencyUnit != null) 'frequency_unit': frequencyUnit,
       if (frequencyDays != null) 'frequency_days': frequencyDays,
       if (reminders != null) 'reminders': reminders,
+      if (repeatCount != null) 'repeat_count': repeatCount,
     });
   }
 
@@ -668,6 +713,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Value<String>? frequencyUnit,
     Value<String?>? frequencyDays,
     Value<String?>? reminders,
+    Value<int>? repeatCount,
   }) {
     return HabitsCompanion(
       id: id ?? this.id,
@@ -683,6 +729,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       frequencyUnit: frequencyUnit ?? this.frequencyUnit,
       frequencyDays: frequencyDays ?? this.frequencyDays,
       reminders: reminders ?? this.reminders,
+      repeatCount: repeatCount ?? this.repeatCount,
     );
   }
 
@@ -728,6 +775,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     if (reminders.present) {
       map['reminders'] = Variable<String>(reminders.value);
     }
+    if (repeatCount.present) {
+      map['repeat_count'] = Variable<int>(repeatCount.value);
+    }
     return map;
   }
 
@@ -746,7 +796,318 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
           ..write('frequencyInterval: $frequencyInterval, ')
           ..write('frequencyUnit: $frequencyUnit, ')
           ..write('frequencyDays: $frequencyDays, ')
-          ..write('reminders: $reminders')
+          ..write('reminders: $reminders, ')
+          ..write('repeatCount: $repeatCount')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HabitCompletionsTable extends HabitCompletions
+    with TableInfo<$HabitCompletionsTable, HabitCompletion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HabitCompletionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _habitIdMeta = const VerificationMeta(
+    'habitId',
+  );
+  @override
+  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
+    'habit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodDateMeta = const VerificationMeta(
+    'periodDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> periodDate = GeneratedColumn<DateTime>(
+    'period_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedRepsMeta = const VerificationMeta(
+    'completedReps',
+  );
+  @override
+  late final GeneratedColumn<int> completedReps = GeneratedColumn<int>(
+    'completed_reps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    habitId,
+    periodDate,
+    completedReps,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'habit_completions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HabitCompletion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('habit_id')) {
+      context.handle(
+        _habitIdMeta,
+        habitId.isAcceptableOrUnknown(data['habit_id']!, _habitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_habitIdMeta);
+    }
+    if (data.containsKey('period_date')) {
+      context.handle(
+        _periodDateMeta,
+        periodDate.isAcceptableOrUnknown(data['period_date']!, _periodDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodDateMeta);
+    }
+    if (data.containsKey('completed_reps')) {
+      context.handle(
+        _completedRepsMeta,
+        completedReps.isAcceptableOrUnknown(
+          data['completed_reps']!,
+          _completedRepsMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HabitCompletion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HabitCompletion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      habitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}habit_id'],
+      )!,
+      periodDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}period_date'],
+      )!,
+      completedReps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}completed_reps'],
+      )!,
+    );
+  }
+
+  @override
+  $HabitCompletionsTable createAlias(String alias) {
+    return $HabitCompletionsTable(attachedDatabase, alias);
+  }
+}
+
+class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
+  final int id;
+  final int habitId;
+  final DateTime periodDate;
+  final int completedReps;
+  const HabitCompletion({
+    required this.id,
+    required this.habitId,
+    required this.periodDate,
+    required this.completedReps,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['habit_id'] = Variable<int>(habitId);
+    map['period_date'] = Variable<DateTime>(periodDate);
+    map['completed_reps'] = Variable<int>(completedReps);
+    return map;
+  }
+
+  HabitCompletionsCompanion toCompanion(bool nullToAbsent) {
+    return HabitCompletionsCompanion(
+      id: Value(id),
+      habitId: Value(habitId),
+      periodDate: Value(periodDate),
+      completedReps: Value(completedReps),
+    );
+  }
+
+  factory HabitCompletion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HabitCompletion(
+      id: serializer.fromJson<int>(json['id']),
+      habitId: serializer.fromJson<int>(json['habitId']),
+      periodDate: serializer.fromJson<DateTime>(json['periodDate']),
+      completedReps: serializer.fromJson<int>(json['completedReps']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'habitId': serializer.toJson<int>(habitId),
+      'periodDate': serializer.toJson<DateTime>(periodDate),
+      'completedReps': serializer.toJson<int>(completedReps),
+    };
+  }
+
+  HabitCompletion copyWith({
+    int? id,
+    int? habitId,
+    DateTime? periodDate,
+    int? completedReps,
+  }) => HabitCompletion(
+    id: id ?? this.id,
+    habitId: habitId ?? this.habitId,
+    periodDate: periodDate ?? this.periodDate,
+    completedReps: completedReps ?? this.completedReps,
+  );
+  HabitCompletion copyWithCompanion(HabitCompletionsCompanion data) {
+    return HabitCompletion(
+      id: data.id.present ? data.id.value : this.id,
+      habitId: data.habitId.present ? data.habitId.value : this.habitId,
+      periodDate: data.periodDate.present
+          ? data.periodDate.value
+          : this.periodDate,
+      completedReps: data.completedReps.present
+          ? data.completedReps.value
+          : this.completedReps,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HabitCompletion(')
+          ..write('id: $id, ')
+          ..write('habitId: $habitId, ')
+          ..write('periodDate: $periodDate, ')
+          ..write('completedReps: $completedReps')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, habitId, periodDate, completedReps);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HabitCompletion &&
+          other.id == this.id &&
+          other.habitId == this.habitId &&
+          other.periodDate == this.periodDate &&
+          other.completedReps == this.completedReps);
+}
+
+class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
+  final Value<int> id;
+  final Value<int> habitId;
+  final Value<DateTime> periodDate;
+  final Value<int> completedReps;
+  const HabitCompletionsCompanion({
+    this.id = const Value.absent(),
+    this.habitId = const Value.absent(),
+    this.periodDate = const Value.absent(),
+    this.completedReps = const Value.absent(),
+  });
+  HabitCompletionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int habitId,
+    required DateTime periodDate,
+    this.completedReps = const Value.absent(),
+  }) : habitId = Value(habitId),
+       periodDate = Value(periodDate);
+  static Insertable<HabitCompletion> custom({
+    Expression<int>? id,
+    Expression<int>? habitId,
+    Expression<DateTime>? periodDate,
+    Expression<int>? completedReps,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (habitId != null) 'habit_id': habitId,
+      if (periodDate != null) 'period_date': periodDate,
+      if (completedReps != null) 'completed_reps': completedReps,
+    });
+  }
+
+  HabitCompletionsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? habitId,
+    Value<DateTime>? periodDate,
+    Value<int>? completedReps,
+  }) {
+    return HabitCompletionsCompanion(
+      id: id ?? this.id,
+      habitId: habitId ?? this.habitId,
+      periodDate: periodDate ?? this.periodDate,
+      completedReps: completedReps ?? this.completedReps,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (habitId.present) {
+      map['habit_id'] = Variable<int>(habitId.value);
+    }
+    if (periodDate.present) {
+      map['period_date'] = Variable<DateTime>(periodDate.value);
+    }
+    if (completedReps.present) {
+      map['completed_reps'] = Variable<int>(completedReps.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HabitCompletionsCompanion(')
+          ..write('id: $id, ')
+          ..write('habitId: $habitId, ')
+          ..write('periodDate: $periodDate, ')
+          ..write('completedReps: $completedReps')
           ..write(')'))
         .toString();
   }
@@ -756,11 +1117,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $HabitsTable habits = $HabitsTable(this);
+  late final $HabitCompletionsTable habitCompletions = $HabitCompletionsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [habits];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    habits,
+    habitCompletions,
+  ];
 }
 
 typedef $$HabitsTableCreateCompanionBuilder =
@@ -778,6 +1145,7 @@ typedef $$HabitsTableCreateCompanionBuilder =
       Value<String> frequencyUnit,
       Value<String?> frequencyDays,
       Value<String?> reminders,
+      Value<int> repeatCount,
     });
 typedef $$HabitsTableUpdateCompanionBuilder =
     HabitsCompanion Function({
@@ -794,6 +1162,7 @@ typedef $$HabitsTableUpdateCompanionBuilder =
       Value<String> frequencyUnit,
       Value<String?> frequencyDays,
       Value<String?> reminders,
+      Value<int> repeatCount,
     });
 
 class $$HabitsTableFilterComposer
@@ -867,6 +1236,11 @@ class $$HabitsTableFilterComposer
 
   ColumnFilters<String> get reminders => $composableBuilder(
     column: $table.reminders,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get repeatCount => $composableBuilder(
+    column: $table.repeatCount,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -944,6 +1318,11 @@ class $$HabitsTableOrderingComposer
     column: $table.reminders,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get repeatCount => $composableBuilder(
+    column: $table.repeatCount,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HabitsTableAnnotationComposer
@@ -1001,6 +1380,11 @@ class $$HabitsTableAnnotationComposer
 
   GeneratedColumn<String> get reminders =>
       $composableBuilder(column: $table.reminders, builder: (column) => column);
+
+  GeneratedColumn<int> get repeatCount => $composableBuilder(
+    column: $table.repeatCount,
+    builder: (column) => column,
+  );
 }
 
 class $$HabitsTableTableManager
@@ -1044,6 +1428,7 @@ class $$HabitsTableTableManager
                 Value<String> frequencyUnit = const Value.absent(),
                 Value<String?> frequencyDays = const Value.absent(),
                 Value<String?> reminders = const Value.absent(),
+                Value<int> repeatCount = const Value.absent(),
               }) => HabitsCompanion(
                 id: id,
                 name: name,
@@ -1058,6 +1443,7 @@ class $$HabitsTableTableManager
                 frequencyUnit: frequencyUnit,
                 frequencyDays: frequencyDays,
                 reminders: reminders,
+                repeatCount: repeatCount,
               ),
           createCompanionCallback:
               ({
@@ -1074,6 +1460,7 @@ class $$HabitsTableTableManager
                 Value<String> frequencyUnit = const Value.absent(),
                 Value<String?> frequencyDays = const Value.absent(),
                 Value<String?> reminders = const Value.absent(),
+                Value<int> repeatCount = const Value.absent(),
               }) => HabitsCompanion.insert(
                 id: id,
                 name: name,
@@ -1088,6 +1475,7 @@ class $$HabitsTableTableManager
                 frequencyUnit: frequencyUnit,
                 frequencyDays: frequencyDays,
                 reminders: reminders,
+                repeatCount: repeatCount,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -1111,10 +1499,197 @@ typedef $$HabitsTableProcessedTableManager =
       Habit,
       PrefetchHooks Function()
     >;
+typedef $$HabitCompletionsTableCreateCompanionBuilder =
+    HabitCompletionsCompanion Function({
+      Value<int> id,
+      required int habitId,
+      required DateTime periodDate,
+      Value<int> completedReps,
+    });
+typedef $$HabitCompletionsTableUpdateCompanionBuilder =
+    HabitCompletionsCompanion Function({
+      Value<int> id,
+      Value<int> habitId,
+      Value<DateTime> periodDate,
+      Value<int> completedReps,
+    });
+
+class $$HabitCompletionsTableFilterComposer
+    extends Composer<_$AppDatabase, $HabitCompletionsTable> {
+  $$HabitCompletionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get habitId => $composableBuilder(
+    column: $table.habitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get completedReps => $composableBuilder(
+    column: $table.completedReps,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$HabitCompletionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $HabitCompletionsTable> {
+  $$HabitCompletionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get habitId => $composableBuilder(
+    column: $table.habitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get completedReps => $composableBuilder(
+    column: $table.completedReps,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$HabitCompletionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HabitCompletionsTable> {
+  $$HabitCompletionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get habitId =>
+      $composableBuilder(column: $table.habitId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get completedReps => $composableBuilder(
+    column: $table.completedReps,
+    builder: (column) => column,
+  );
+}
+
+class $$HabitCompletionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $HabitCompletionsTable,
+          HabitCompletion,
+          $$HabitCompletionsTableFilterComposer,
+          $$HabitCompletionsTableOrderingComposer,
+          $$HabitCompletionsTableAnnotationComposer,
+          $$HabitCompletionsTableCreateCompanionBuilder,
+          $$HabitCompletionsTableUpdateCompanionBuilder,
+          (
+            HabitCompletion,
+            BaseReferences<
+              _$AppDatabase,
+              $HabitCompletionsTable,
+              HabitCompletion
+            >,
+          ),
+          HabitCompletion,
+          PrefetchHooks Function()
+        > {
+  $$HabitCompletionsTableTableManager(
+    _$AppDatabase db,
+    $HabitCompletionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HabitCompletionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HabitCompletionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HabitCompletionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> habitId = const Value.absent(),
+                Value<DateTime> periodDate = const Value.absent(),
+                Value<int> completedReps = const Value.absent(),
+              }) => HabitCompletionsCompanion(
+                id: id,
+                habitId: habitId,
+                periodDate: periodDate,
+                completedReps: completedReps,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int habitId,
+                required DateTime periodDate,
+                Value<int> completedReps = const Value.absent(),
+              }) => HabitCompletionsCompanion.insert(
+                id: id,
+                habitId: habitId,
+                periodDate: periodDate,
+                completedReps: completedReps,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$HabitCompletionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $HabitCompletionsTable,
+      HabitCompletion,
+      $$HabitCompletionsTableFilterComposer,
+      $$HabitCompletionsTableOrderingComposer,
+      $$HabitCompletionsTableAnnotationComposer,
+      $$HabitCompletionsTableCreateCompanionBuilder,
+      $$HabitCompletionsTableUpdateCompanionBuilder,
+      (
+        HabitCompletion,
+        BaseReferences<_$AppDatabase, $HabitCompletionsTable, HabitCompletion>,
+      ),
+      HabitCompletion,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$HabitsTableTableManager get habits =>
       $$HabitsTableTableManager(_db, _db.habits);
+  $$HabitCompletionsTableTableManager get habitCompletions =>
+      $$HabitCompletionsTableTableManager(_db, _db.habitCompletions);
 }
