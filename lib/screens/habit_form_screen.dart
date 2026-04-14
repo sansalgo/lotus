@@ -127,14 +127,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         final updated = await (_database.select(_database.habits)
               ..where((t) => t.id.equals(habitId)))
             .getSingle();
-        await NotificationService.scheduleHabitReminders(updated);
+        try {
+          await NotificationService.scheduleHabitReminders(updated);
+        } catch (_) {}
       } else {
         final habitId =
             await _database.into(_database.habits).insert(companion);
         final inserted = await (_database.select(_database.habits)
               ..where((t) => t.id.equals(habitId)))
             .getSingle();
-        await NotificationService.scheduleHabitReminders(inserted);
+        try {
+          await NotificationService.scheduleHabitReminders(inserted);
+        } catch (_) {}
       }
 
       if (mounted) {

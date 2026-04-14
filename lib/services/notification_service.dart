@@ -63,6 +63,7 @@ class NotificationService {
   /// Cancel all existing reminders for [habit], then schedule fresh ones
   /// for every time stored in its reminders field.
   static Future<void> scheduleHabitReminders(Habit habit) async {
+    if (!_initialized) return;
     await cancelHabitReminders(habit.id);
 
     final times = _parseTimes(habit);
@@ -92,6 +93,7 @@ class NotificationService {
 
   /// Cancel all notifications belonging to [habitId].
   static Future<void> cancelHabitReminders(int habitId) async {
+    if (!_initialized) return;
     for (int i = 0; i < 100; i++) {
       await _plugin.cancel(habitId * 100 + i);
     }
