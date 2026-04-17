@@ -833,6 +833,7 @@ class _CalendarCell extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 32,
         height: 32,

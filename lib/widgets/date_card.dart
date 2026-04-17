@@ -244,7 +244,7 @@ class _DayItem extends StatelessWidget {
           children: [
             Text(label, style: baseTextStyle.copyWith(color: Colors.white)),
             const SizedBox(height: 2),
-            Text(sublabel, style: subTextStyle),
+            Text(sublabel, style: subTextStyle, softWrap: false),
           ],
         ),
       );
