@@ -141,15 +141,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         } catch (_) {}
       }
 
-      if (mounted) {
-        if (widget.initialHabit != null) {
-          // After editing, pop back to the root (HabitsScreen) so the
-          // detail screen re-opens with the freshest habit data.
-          Navigator.popUntil(context, (route) => route.isFirst);
-        } else {
-          Navigator.pop(context);
-        }
-      }
+      if (mounted) Navigator.pop(context);
     }
   }
 
