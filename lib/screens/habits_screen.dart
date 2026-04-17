@@ -24,6 +24,9 @@ class HabitsScreen extends StatefulWidget {
 class _HabitsScreenState extends State<HabitsScreen> {
   late AppDatabase _database;
 
+  /// The date currently selected in the DateCard.
+  late DateTime _selectedDate;
+
   /// All completion rows — filtered per-habit in code using the period date.
   List<HabitCompletion> _allCompletions = [];
   StreamSubscription<List<HabitCompletion>>? _completionSub;
@@ -32,55 +35,77 @@ class _HabitsScreenState extends State<HabitsScreen> {
   void initState() {
     super.initState();
     _database = AppDatabase();
+    _selectedDate = _dayOnly(DateTime.now());
+
     _completionSub = _database.watchAllCompletions().listen((completions) {
       if (mounted) setState(() => _allCompletions = completions);
     });
+
+    // Request notification permission on first launch (best-effort).
     NotificationService.requestPermissions().catchError((_) {});
   }
 
   @override
   void dispose() {
     _completionSub?.cancel();
-    _database.close();
     super.dispose();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Date helpers ───────────────────────────────────────────────────────────
+
+  DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool get _isSelectedDateToday => _isSameDay(_selectedDate, _dayOnly(DateTime.now()));
+
+  bool get _isSelectedDateFuture =>
+      _selectedDate.isAfter(_dayOnly(DateTime.now()));
+
+  // ── Completion helpers ────────────────────────────────────────────────────
 
   int _completedReps(Habit habit) {
-    final period = AppDatabase.getPeriodDate(habit);
+    final period = AppDatabase.getPeriodDate(habit, _selectedDate);
     return _allCompletions
             .where(
               (c) =>
-                  c.habitId == habit.id && _isSamePeriod(c.periodDate, period),
+                  c.habitId == habit.id &&
+                  _isSameDay(c.periodDate, period),
             )
             .firstOrNull
             ?.completedReps ??
         0;
   }
 
-  bool _isSamePeriod(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
   bool _isCompleted(Habit habit) =>
       _completedReps(habit) >= habit.repeatCount;
+
+  // ── Habit visibility ──────────────────────────────────────────────────────
+
+  /// A habit is visible on [_selectedDate] when it was created on or before that date.
+  bool _isVisibleOnDate(Habit habit) {
+    final created = _dayOnly(habit.createdAt);
+    return !created.isAfter(_selectedDate);
+  }
 
   // ── Completion tap handler ────────────────────────────────────────────────
 
   Future<void> _handleCompleteTap(Habit habit) async {
-    final period = AppDatabase.getPeriodDate(habit);
+    // Guard: must not be a future date.
+    if (_isSelectedDateFuture) return;
+
+    final period = AppDatabase.getPeriodDate(habit, _selectedDate);
     final total = habit.repeatCount;
     final completed = _completedReps(habit);
     final alreadyDone = completed >= total;
 
     if (alreadyDone) {
-      // Unclick: clear all completions for this period immediately.
       await _database.updateHabitCompletion(habit.id, period, 0);
       return;
     }
 
     if (total == 1) {
-      // Single-rep: toggle directly.
       await _database.updateHabitCompletion(habit.id, period, 1);
       return;
     }
@@ -105,118 +130,127 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              // Header
+              Row(
                 children: [
-                  const SizedBox(height: 12),
-                  // Header
-                  Row(
-                    children: [
-                      const Text(
-                        'Habits',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const Spacer(),
-                      CircleIconButton(
-                        icon: PhosphorIconsBold.plus,
-                        size: 20,
-                        onTap: () => Navigator.push(
-                          context,
-                          SlidePageRoute(page: const HabitFormScreen()),
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'Habits',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  const DateCard(),
-                  const SizedBox(height: 16),
-                  // Habit list
-                  Expanded(
-                    child: StreamBuilder<List<Habit>>(
-                      stream: _database.select(_database.habits).watch(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Text('Error: ${snapshot.error}'),
-                          );
-                        }
-
-                        final habits = snapshot.data ?? [];
-
-                        if (habits.isEmpty) {
-                          return _buildEmptyState();
-                        }
-
-                        final active =
-                            habits.where((h) => !_isCompleted(h)).toList();
-                        final completed =
-                            habits.where((h) => _isCompleted(h)).toList();
-
-                        return ListView(
-                          padding: const EdgeInsets.only(bottom: 100),
-                          children: [
-                            // ── Active habits ──────────────────────────
-                            ...List.generate(active.length, (i) {
-                              final habit = active[i];
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: i < active.length - 1 ? 10 : 0,
-                                ),
-                                child: _buildHabitCard(habit),
-                              );
-                            }),
-                            // ── Completed section ──────────────────────
-                            if (completed.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              const _SectionHeader(label: 'Completed'),
-                              const SizedBox(height: 10),
-                              ...List.generate(completed.length, (i) {
-                                final habit = completed[i];
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: i < completed.length - 1 ? 10 : 0,
-                                  ),
-                                  child: _buildHabitCard(habit),
-                                );
-                              }),
-                            ],
-                          ],
-                        );
-                      },
+                  const Spacer(),
+                  CircleIconButton(
+                    icon: PhosphorIconsBold.plus,
+                    size: 20,
+                    onTap: () => Navigator.push(
+                      context,
+                      SlidePageRoute(page: const HabitFormScreen()),
                     ),
                   ),
                 ],
               ),
-            ),
-            // const BottomActionsBar(),
-          ],
+              const SizedBox(height: 16),
+              DateCard(
+                selectedDate: _selectedDate,
+                onDateChanged: (date) =>
+                    setState(() => _selectedDate = _dayOnly(date)),
+              ),
+              const SizedBox(height: 16),
+              // Habit list
+              Expanded(
+                child: StreamBuilder<List<Habit>>(
+                  stream: _database.select(_database.habits).watch(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+
+                    final allHabits = snapshot.data ?? [];
+                    final visible = allHabits
+                        .where(_isVisibleOnDate)
+                        .toList();
+
+                    if (visible.isEmpty) {
+                      return _buildEmptyState();
+                    }
+
+                    final canComplete = !_isSelectedDateFuture;
+
+                    final active =
+                        visible.where((h) => !_isCompleted(h)).toList();
+                    final completed =
+                        visible.where((h) => _isCompleted(h)).toList();
+
+                    return ListView(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      children: [
+                        // ── Active habits ─────────────────────────────────
+                        ...List.generate(active.length, (i) {
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: i < active.length - 1 ? 10 : 0,
+                            ),
+                            child: _buildHabitCard(
+                              active[i],
+                              canComplete: canComplete,
+                            ),
+                          );
+                        }),
+                        // ── Completed section ─────────────────────────────
+                        if (completed.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          const _SectionHeader(label: 'Completed'),
+                          const SizedBox(height: 10),
+                          ...List.generate(completed.length, (i) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: i < completed.length - 1 ? 10 : 0,
+                              ),
+                              child: _buildHabitCard(
+                                completed[i],
+                                canComplete: canComplete,
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHabitCard(Habit habit) {
+  Widget _buildHabitCard(Habit habit, {required bool canComplete}) {
     final completed = _completedReps(habit);
     final done = _isCompleted(habit);
 
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        SlidePageRoute(page: HabitDetailScreen(habit: habit)),
+        SlidePageRoute(
+          page: HabitDetailScreen(
+            habitId: habit.id,
+            initialHabit: habit,
+            selectedDate: _selectedDate,
+          ),
+        ),
       ),
       child: HabitCard(
         icon: IconMapper.getIconFromName(habit.iconName),
@@ -226,7 +260,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
         completedReps: completed,
         totalReps: habit.repeatCount,
         isCompleted: done,
-        onComplete: () => _handleCompleteTap(habit),
+        canComplete: canComplete,
+        onComplete: canComplete ? () => _handleCompleteTap(habit) : null,
       ),
     );
   }
@@ -243,7 +278,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No habits yet',
+            _isSelectedDateFuture
+                ? 'No habits for this date yet'
+                : 'No habits yet',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -251,10 +288,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Tap the + button to create one',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-          ),
+          if (_isSelectedDateToday || _isSelectedDateFuture)
+            Text(
+              'Tap the + button to create one',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            ),
         ],
       ),
     );
