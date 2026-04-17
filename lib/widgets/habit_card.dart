@@ -12,6 +12,8 @@ class HabitCard extends StatelessWidget {
   final int totalReps;
   final bool isCompleted;
   final VoidCallback? onComplete;
+  /// When false the completion button is hidden (e.g. future date).
+  final bool canComplete;
 
   const HabitCard({
     super.key,
@@ -23,6 +25,7 @@ class HabitCard extends StatelessWidget {
     this.totalReps = 1,
     this.isCompleted = false,
     this.onComplete,
+    this.canComplete = true,
   });
 
   @override
@@ -72,14 +75,15 @@ class HabitCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Completion button with circular progress ring
-            _CompletionButton(
-              completedReps: completedReps,
-              totalReps: totalReps,
-              isCompleted: isCompleted,
-              progressColor: bgColor ?? AppColors.primary,
-              onTap: onComplete,
-            ),
+            // Completion button — hidden on future dates
+            if (canComplete)
+              _CompletionButton(
+                completedReps: completedReps,
+                totalReps: totalReps,
+                isCompleted: isCompleted,
+                progressColor: bgColor ?? AppColors.primary,
+                onTap: onComplete,
+              ),
           ],
         ),
       ),
