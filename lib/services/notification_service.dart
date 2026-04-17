@@ -45,8 +45,10 @@ class NotificationService {
   }
 
   /// Request notification permissions from the OS.
-  /// Call this once at an appropriate time (e.g. first launch or reminder add).
+  /// Safe to call multiple times — only prompts once per app lifetime.
   static Future<void> requestPermissions() async {
+    await _ensureInitialized();
+
     await _plugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
@@ -63,14 +65,11 @@ class NotificationService {
   /// Cancel all existing reminders for [habit], then schedule fresh ones
   /// for every time stored in its reminders field.
   static Future<void> scheduleHabitReminders(Habit habit) async {
-    if (!_initialized) return;
+    await _ensureInitialized();
     await cancelHabitReminders(habit.id);
 
     final times = _parseTimes(habit);
     if (times.isEmpty) return;
-
-    // Request permissions the first time reminders are actually set.
-    await requestPermissions();
 
     for (int i = 0; i < times.length; i++) {
       final parts = times[i].split(':');
@@ -100,6 +99,11 @@ class NotificationService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /// Ensures the plugin is initialized, re-running init if it previously failed.
+  static Future<void> _ensureInitialized() async {
+    if (!_initialized) await init();
+  }
 
   static List<String> _parseTimes(Habit habit) {
     if (habit.reminders != null && habit.reminders!.isNotEmpty) {

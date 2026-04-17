@@ -82,18 +82,19 @@ class AppDatabase extends _$AppDatabase {
   // ── Period helpers ───────────────────────────────────────────────────────
 
   /// Returns the start of the current tracking period for a habit.
-  static DateTime getPeriodDate(Habit habit) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  /// [forDate] defaults to today when omitted.
+  static DateTime getPeriodDate(Habit habit, [DateTime? forDate]) {
+    final ref = forDate ?? DateTime.now();
+    final day = DateTime(ref.year, ref.month, ref.day);
     final unit = habit.frequencyUnit;
     if (unit == 'weeks') {
       // Monday-based week start
-      final daysFromMonday = now.weekday - 1;
-      return today.subtract(Duration(days: daysFromMonday));
+      final daysFromMonday = ref.weekday - 1;
+      return day.subtract(Duration(days: daysFromMonday));
     } else if (unit == 'months') {
-      return DateTime(now.year, now.month, 1);
+      return DateTime(ref.year, ref.month, 1);
     }
-    return today;
+    return day;
   }
 
   // ── Completion queries ───────────────────────────────────────────────────

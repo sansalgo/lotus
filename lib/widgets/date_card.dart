@@ -1,57 +1,103 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 
-class DateCard extends StatelessWidget {
-  const DateCard({super.key});
+class DateCard extends StatefulWidget {
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onDateChanged;
+
+  const DateCard({
+    super.key,
+    required this.selectedDate,
+    required this.onDateChanged,
+  });
+
+  @override
+  State<DateCard> createState() => _DateCardState();
+}
+
+class _DateCardState extends State<DateCard> {
+  // Fixed epoch — all indices are days since this date.
+  static final DateTime _epoch = DateTime(2020, 1, 1);
+  // 16-year range: 2020-01-01 → 2035-12-31
+  static const int _totalDays = 365 * 16 + 4;
+
+  late FixedExtentScrollController _ctrl;
+
+  /// Date reflected in the header — updates live as the user scrolls.
+  late DateTime _displayed;
+
+  // ── Index helpers ─────────────────────────────────────────────────────────
+
+  int _indexOf(DateTime d) {
+    final day = DateTime(d.year, d.month, d.day);
+    return day.difference(_epoch).inDays.clamp(0, _totalDays - 1);
+  }
+
+  DateTime _dateAt(int index) => _epoch.add(Duration(days: index));
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+  @override
+  void initState() {
+    super.initState();
+    _displayed = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+    );
+    _ctrl = FixedExtentScrollController(initialItem: _indexOf(_displayed));
+  }
+
+  @override
+  void didUpdateWidget(DateCard old) {
+    super.didUpdateWidget(old);
+    final incoming = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+    );
+    if (!_isSameDay(old.selectedDate, incoming) &&
+        !_isSameDay(_displayed, incoming)) {
+      setState(() => _displayed = incoming);
+      if (_ctrl.hasClients) {
+        _ctrl.animateToItem(
+          _indexOf(incoming),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  // ── Name tables ───────────────────────────────────────────────────────────
+
+  static const _dayNames = [
+    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+  ];
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  static const _dayAbbrs = [
+    'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN',
+  ];
+
+  int _weekdayIndex(DateTime d) => d.weekday == 7 ? 6 : d.weekday - 1;
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final dayAbbreviations = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
-    // Get current day name (abbreviated)
-    final currentDayName = dayNames[now.weekday == 7 ? 6 : now.weekday - 1];
-    final currentMonthName = monthNames[now.month - 1];
-    final currentYear = now.year.toString();
-
-    // Calculate the start of the week (Sunday)
-    final daysFromSunday = now.weekday == 7 ? 0 : now.weekday;
-    final startOfWeek = now.subtract(Duration(days: daysFromSunday));
-
-    // Generate 7 days for the week
-    final weekDays = List.generate(7, (index) {
-      final date = startOfWeek.add(Duration(days: index));
-      final dayOfMonth = date.day.toString();
-      final weekdayIndex = date.weekday == 7 ? 6 : date.weekday - 1;
-      final dayAbbr = dayAbbreviations[weekdayIndex];
-      final isSelected =
-          date.year == now.year &&
-          date.month == now.month &&
-          date.day == now.day;
-      return _DayItem(
-        label: dayOfMonth,
-        sublabel: dayAbbr,
-        isSelected: isSelected,
-      );
-    });
-
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -62,6 +108,7 @@ class DateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header ───────────────────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +117,7 @@ class DateCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    currentDayName,
+                    _dayNames[_weekdayIndex(_displayed)],
                     style: const TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w700,
@@ -83,31 +130,82 @@ class DateCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    currentMonthName,
+                    _monthNames[_displayed.month - 1],
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    currentYear,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    '${_displayed.year}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
-          // Dates row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: weekDays,
+          // ── Date strip ────────────────────────────────────────────────────
+          // LayoutBuilder so itemExtent = availableWidth/7, giving exactly
+          // 3 dates left | selected center | 3 dates right.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final slotWidth = constraints.maxWidth / 7;
+              return SizedBox(
+                height: 54,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: ListWheelScrollView.useDelegate(
+                    controller: _ctrl,
+                    itemExtent: slotWidth,
+                    perspective: 0.0001,
+                    physics: const FixedExtentScrollPhysics(),
+                    onSelectedItemChanged: (i) {
+                      HapticFeedback.selectionClick();
+                      final date = _dateAt(i);
+                      setState(() => _displayed = date);
+                      widget.onDateChanged(date);
+                    },
+                    childDelegate: ListWheelChildBuilderDelegate(
+                      childCount: _totalDays,
+                      builder: (_, i) {
+                        final date = _dateAt(i);
+                        final isSelected = _isSameDay(date, _displayed);
+                        return RotatedBox(
+                          quarterTurns: 1,
+                          child: GestureDetector(
+                            // Tapping any date scrolls it to the center.
+                            onTap: () => _ctrl.animateToItem(
+                              i,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            ),
+                            child: Center(
+                              child: _DayItem(
+                                label: '${date.day}',
+                                sublabel: _dayAbbrs[_weekdayIndex(date)],
+                                isSelected: isSelected,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 }
+
+// ── Day item — exact original style ──────────────────────────────────────────
 
 class _DayItem extends StatelessWidget {
   final String label;
@@ -142,16 +240,18 @@ class _DayItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(label, style: baseTextStyle.copyWith(color: Colors.white)),
             const SizedBox(height: 2),
-            Text(sublabel, style: subTextStyle),
+            Text(sublabel, style: subTextStyle, softWrap: false),
           ],
         ),
       );
     }
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(label, style: baseTextStyle),
         Text(sublabel, style: subTextStyle),
@@ -159,4 +259,3 @@ class _DayItem extends StatelessWidget {
     );
   }
 }
-

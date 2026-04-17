@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -10,11 +11,19 @@ import '../routes/slide_page_route.dart';
 import 'habit_form_screen.dart';
 
 class HabitDetailScreen extends StatefulWidget {
-  final Habit habit;
+  final int habitId;
+
+  /// Passed for instant rendering before the live stream fires.
+  final Habit initialHabit;
+
+  /// The date selected on the habits screen — used as the initial view date.
+  final DateTime selectedDate;
 
   const HabitDetailScreen({
     super.key,
-    required this.habit,
+    required this.habitId,
+    required this.initialHabit,
+    required this.selectedDate,
   });
 
   @override
@@ -24,55 +33,84 @@ class HabitDetailScreen extends StatefulWidget {
 class _HabitDetailScreenState extends State<HabitDetailScreen> {
   late AppDatabase _database;
 
+  /// Always reflects the latest DB state.
+  late Habit _habit;
+
+  /// The date whose data is currently being viewed.
+  late DateTime _selectedDate;
+
+  /// The month shown in the calendar grid (year + month, day is always 1).
+  late DateTime _calendarMonth;
+
+  StreamSubscription<Habit?>? _habitSub;
+
   @override
   void initState() {
     super.initState();
     _database = AppDatabase();
+    _habit = widget.initialHabit;
+
+    final d = widget.selectedDate;
+    _selectedDate = DateTime(d.year, d.month, d.day);
+    _calendarMonth = DateTime(d.year, d.month, 1);
+
+    // Watch the habit row for live updates (e.g. after editing).
+    _habitSub = (_database.select(_database.habits)
+          ..where((h) => h.id.equals(widget.habitId)))
+        .watchSingleOrNull()
+        .listen((habit) {
+      if (!mounted) return;
+      if (habit == null) {
+        Navigator.pop(context); // deleted elsewhere
+      } else {
+        setState(() => _habit = habit);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _database.close();
+    _habitSub?.cancel();
     super.dispose();
   }
 
-  // ── Data helpers ──────────────────────────────────────────────────────────
+  // ── Completion stream ─────────────────────────────────────────────────────
 
   Stream<List<HabitCompletion>> get _completionStream =>
       (_database.select(_database.habitCompletions)
-            ..where((c) => c.habitId.equals(widget.habit.id)))
+            ..where((c) => c.habitId.equals(widget.habitId)))
           .watch();
 
+  // ── Chip helpers ──────────────────────────────────────────────────────────
+
   List<String> get _chips {
-    final count = widget.habit.repeatCount;
+    final count = _habit.repeatCount;
     return [
-      widget.habit.frequency.toUpperCase(),
+      _habit.frequency.toUpperCase(),
       '$count ${count == 1 ? 'REP' : 'REPS'}',
     ];
   }
 
   List<String> get _reminderTimes {
-    if (widget.habit.reminders != null &&
-        widget.habit.reminders!.isNotEmpty) {
-      return widget.habit.reminders!
+    if (_habit.reminders != null && _habit.reminders!.isNotEmpty) {
+      return _habit.reminders!
           .split(',')
           .map((t) => t.trim())
           .where((t) => t.isNotEmpty)
           .toList();
     }
-    if (widget.habit.reminderTime != null &&
-        widget.habit.reminderTime!.isNotEmpty) {
-      return [widget.habit.reminderTime!];
+    if (_habit.reminderTime != null && _habit.reminderTime!.isNotEmpty) {
+      return [_habit.reminderTime!];
     }
     return [];
   }
 
+  // ── Stat helpers ──────────────────────────────────────────────────────────
+
   bool _periodCompleted(HabitCompletion c) =>
-      c.completedReps >= widget.habit.repeatCount;
+      c.completedReps >= _habit.repeatCount;
 
   DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  // ── Stat computations ─────────────────────────────────────────────────────
 
   int _streak(List<HabitCompletion> all) {
     final doneDays = all
@@ -112,17 +150,18 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       all.where(_periodCompleted).length;
 
   int _finishedThisWeek(List<HabitCompletion> all) {
-    final now = DateTime.now();
-    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
+    final weekStart = _dayOnly(_selectedDate).subtract(
+      Duration(days: _selectedDate.weekday - 1),
+    );
+    final weekEnd = weekStart.add(const Duration(days: 6));
     return all.where((c) {
       final d = _dayOnly(c.periodDate);
-      return _periodCompleted(c) && !d.isBefore(weekStart);
+      return _periodCompleted(c) && !d.isBefore(weekStart) && !d.isAfter(weekEnd);
     }).length;
   }
 
-  /// Total periods from creation date to today (inclusive).
   int _totalPeriods() {
-    final created = _dayOnly(widget.habit.createdAt);
+    final created = _dayOnly(_habit.createdAt);
     final today = _dayOnly(DateTime.now());
     return math.max(1, today.difference(created).inDays + 1);
   }
@@ -132,11 +171,11 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return '$rate%';
   }
 
-  /// completedReps for each of the 7 days of the current week (Mon index 0).
   List<double> _weekBarValues(List<HabitCompletion> all) {
-    final now = DateTime.now();
-    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
-    final total = widget.habit.repeatCount;
+    final weekStart = _dayOnly(_selectedDate).subtract(
+      Duration(days: _selectedDate.weekday - 1),
+    );
+    final total = _habit.repeatCount;
     return List.generate(7, (i) {
       final day = weekStart.add(Duration(days: i));
       final comp = all.where((c) => _dayOnly(c.periodDate) == day).firstOrNull;
@@ -162,9 +201,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           'Delete Habit',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        content: Text(
-          'Delete "${widget.habit.name}"? This cannot be undone.',
-        ),
+        content: Text('Delete "${_habit.name}"? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -181,9 +218,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
     );
     if (confirmed == true && mounted) {
-      await NotificationService.cancelHabitReminders(widget.habit.id);
+      await NotificationService.cancelHabitReminders(_habit.id);
       await (_database.delete(_database.habits)
-            ..where((t) => t.id.equals(widget.habit.id)))
+            ..where((t) => t.id.equals(_habit.id)))
           .go();
       if (mounted) Navigator.pop(context);
     }
@@ -253,7 +290,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 onTap: () => Navigator.push(
                   context,
                   SlidePageRoute(
-                    page: HabitFormScreen(initialHabit: widget.habit),
+                    page: HabitFormScreen(initialHabit: _habit),
                   ),
                 ),
               ),
@@ -266,7 +303,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            widget.habit.name,
+            _habit.name,
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -293,7 +330,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               child: _Chip(label: c),
             ),
           ),
-          if (_reminderTimes.isNotEmpty) _ReminderChip(times: _reminderTimes),
+          if (_reminderTimes.isNotEmpty)
+            _ReminderChip(times: _reminderTimes),
         ],
       ),
     );
@@ -302,7 +340,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   // ── Stat cards ────────────────────────────────────────────────────────────
 
   Widget _buildStatCards(List<HabitCompletion> completions) {
-    final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
+    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
     final streak = _streak(completions);
     final best = _bestStreak(completions);
     final finished = _finished(completions);
@@ -379,10 +417,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 2),
-          Text(
-            sub,
-            style: const TextStyle(fontSize: 11, color: Colors.black45),
-          ),
+          Text(sub, style: const TextStyle(fontSize: 11, color: Colors.black45)),
         ],
       ),
     );
@@ -390,15 +425,42 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   // ── Calendar ──────────────────────────────────────────────────────────────
 
-  Widget _buildCalendar(List<HabitCompletion> completions) {
-    final now = DateTime.now();
-    final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
+  // ignore: unused_element
+  void _prevMonth() => setState(() {
+        _calendarMonth =
+            DateTime(_calendarMonth.year, _calendarMonth.month - 1, 1);
+      });
 
-    // Set of days in current month that are fully completed
+  // ignore: unused_element
+  void _nextMonth() => setState(() {
+        _calendarMonth =
+            DateTime(_calendarMonth.year, _calendarMonth.month + 1, 1);
+      });
+
+  Widget _buildCalendar(List<HabitCompletion> completions) {
+    final today = _dayOnly(DateTime.now());
+    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
+
+    // Only highlight days in the displayed month to avoid day-number collisions.
     final doneDays = completions
         .where(_periodCompleted)
+        .where((c) =>
+            c.periodDate.year == _calendarMonth.year &&
+            c.periodDate.month == _calendarMonth.month)
         .map((c) => c.periodDate.day)
         .toSet();
+
+    // Today's day number — only relevant when showing the current month.
+    final todayDay = (today.year == _calendarMonth.year &&
+            today.month == _calendarMonth.month)
+        ? today.day
+        : null;
+
+    // Selected day number — only relevant when showing the selected date's month.
+    final selectedDay = (_selectedDate.year == _calendarMonth.year &&
+            _selectedDate.month == _calendarMonth.month)
+        ? _selectedDate.day
+        : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -408,10 +470,22 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // ── Month header (navigation arrows hidden for now, kept below) ──
           Text(
-            '${_monthName(now.month)} ${now.year}',
+            '${_monthName(_calendarMonth.month)} ${_calendarMonth.year}',
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
+          // ignore: dead_code
+          // ignore: unused_element
+          // _prevMonth / _nextMonth are wired and ready — unhide to re-enable:
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //   children: [
+          //     GestureDetector(onTap: _prevMonth, ...chevron_left...),
+          //     Text('${_monthName(_calendarMonth.month)} ${_calendarMonth.year}'),
+          //     GestureDetector(onTap: _nextMonth, ...chevron_right...),
+          //   ],
+          // ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -434,20 +508,22 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 .toList(),
           ),
           const SizedBox(height: 8),
-          ..._buildCalendarRows(now, doneDays, habitColor),
+          ..._buildCalendarRows(doneDays, habitColor, todayDay, selectedDay),
         ],
       ),
     );
   }
 
   List<Widget> _buildCalendarRows(
-    DateTime now,
     Set<int> doneDays,
     Color habitColor,
+    int? todayDay,
+    int? selectedDay,
   ) {
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final firstWeekday = DateTime(now.year, now.month, 1).weekday;
-    // Mon=1..Sun=7 → Sun=0..Sat=6 offset
+    final year = _calendarMonth.year;
+    final month = _calendarMonth.month;
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstWeekday = DateTime(year, month, 1).weekday;
     final startOffset = firstWeekday == 7 ? 0 : firstWeekday;
 
     final rows = <Widget>[];
@@ -461,9 +537,18 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         }
         return _CalendarCell(
           day: d,
-          isToday: d == now.day,
+          isToday: d == todayDay,
           isDone: doneDays.contains(d),
+          isSelected: d == selectedDay,
           habitColor: habitColor,
+          onTap: () {
+            final tapped = DateTime(year, month, d);
+            setState(() {
+              _selectedDate = tapped;
+              // Keep the calendar on the same month the user tapped.
+              _calendarMonth = DateTime(year, month, 1);
+            });
+          },
         );
       });
       rows.add(
@@ -483,9 +568,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   // ── Statistics ────────────────────────────────────────────────────────────
 
   Widget _buildStatistics(List<HabitCompletion> completions) {
-    final now = DateTime.now();
-    // Week runs Mon–Sun
-    final weekStart = _dayOnly(now).subtract(Duration(days: now.weekday - 1));
+    final weekStart = _dayOnly(_selectedDate).subtract(
+      Duration(days: _selectedDate.weekday - 1),
+    );
     final weekEnd = weekStart.add(const Duration(days: 6));
     final avg = _avgReps(completions);
 
@@ -498,7 +583,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${_monthName(now.month)} ${now.year}',
+          '${_monthName(_selectedDate.month)} ${_selectedDate.year}',
           style: const TextStyle(fontSize: 14, color: Colors.black54),
         ),
         const SizedBox(height: 12),
@@ -506,7 +591,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border)
+            border: Border.all(color: AppColors.border),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -526,7 +611,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                         ),
                       ),
                       Text(
-                        '${now.year}',
+                        '${_selectedDate.year}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.black54,
@@ -546,10 +631,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                       ),
                       const Text(
                         'Avg. repeats',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black54,
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
                       ),
                     ],
                   ),
@@ -568,10 +650,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const maxBarHeight = 56.0;
     final barValues = _weekBarValues(completions);
-    final habitColor = ColorMapper.getColorFromName(widget.habit.colorName);
-    final now = DateTime.now();
-    // current day index in Mon-based week (0=Mon … 6=Sun)
-    final todayIndex = now.weekday - 1;
+    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
+    final todayIndex = _selectedDate.weekday - 1;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -719,41 +799,60 @@ class _CalendarCell extends StatelessWidget {
   final int day;
   final bool isToday;
   final bool isDone;
+  final bool isSelected;
   final Color habitColor;
+  final VoidCallback onTap;
 
   const _CalendarCell({
     required this.day,
     required this.isToday,
     required this.isDone,
+    required this.isSelected,
     required this.habitColor,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     Color? bg;
     Color textColor = Colors.black87;
+    Border? border;
 
-    if (isToday) {
-      bg = AppColors.primary;
+    if (isSelected) {
+      // Selected date always gets solid black fill with white text.
+      bg = Colors.black87;
       textColor = Colors.white;
     } else if (isDone) {
       bg = habitColor.withValues(alpha: 0.25);
     }
 
-    return Container(
-      width: 32,
-      height: 32,
-      alignment: Alignment.center,
-      decoration: bg != null
-          ? BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10))
-          : null,
-      child: Text(
-        '$day',
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight:
-              (isToday || isDone) ? FontWeight.w700 : FontWeight.w500,
-          color: textColor,
+    // Today gets a border ring only when it isn't also the selected date.
+    if (isToday && !isSelected) {
+      border = Border.all(color: Colors.black54, width: 1.5);
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: (bg != null || border != null)
+            ? BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(10),
+                border: border,
+              )
+            : null,
+        child: Text(
+          '$day',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight:
+                (isSelected || isDone || isToday) ? FontWeight.w700 : FontWeight.w500,
+            color: textColor,
+          ),
         ),
       ),
     );
