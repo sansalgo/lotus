@@ -1,56 +1,53 @@
-# Lotus - Habit Tracker
+# Lotus — Habit Tracker
 
-A Flutter habit tracking application with a clean, modern UI.
+A minimalist habit tracker built with Flutter. Track daily, weekly, monthly, or custom-frequency habits with streak tracking, completion heatmaps, and local reminders.
+
+## Features
+
+- **Date-aware tracking** — navigate by date, mark habits complete for any day
+- **Flexible frequency** — every N days / weeks / months / years, or specific weekdays
+- **Multi-rep habits** — track habits that repeat multiple times per period
+- **Statistics** — current streak, best streak, completion rate, total completions
+- **Visual history** — monthly calendar heatmap and weekly bar chart per habit
+- **Local reminders** — schedule multiple daily notification times per habit
+- **Icon & color picker** — 700+ Phosphor icons with fuzzy search, 12 accent colors
+- **Animated navigation** — smooth slide transitions, no external state management
+
+## Tech Stack
+
+| | |
+|---|---|
+| **UI** | Flutter, Material 3, Geist font |
+| **Database** | Drift (SQLite ORM), schema v4 |
+| **Icons** | Phosphor Flutter |
+| **Notifications** | flutter_local_notifications + timezone |
+| **Search** | fuzzy (icon picker) |
+
+## Setup
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Generate Drift database files (required)
+flutter pub run build_runner build
+
+# Run the app
+flutter run
+```
+
+> After any changes to `lib/database/app_database.dart`, re-run `build_runner build`. Never edit `.g.dart` files manually.
 
 ## Project Structure
 
 ```
 lib/
-├── database/          # Drift database setup
-├── models/            # Data models
-├── routes/            # Navigation and routing
-├── screens/           # Screen widgets
-├── theme/             # Theme configuration and colors
-└── widgets/           # Reusable widgets
-```
-
-## Setup
-
-1. Install dependencies:
-```bash
-flutter pub get
-```
-
-2. Generate database files (required for Drift):
-```bash
-flutter pub run build_runner build
-```
-
-3. Run the app:
-```bash
-flutter run
-```
-
-## Features
-
-- **Theme System**: Centralized color constants accessible via theme extensions
-  - Border color: `#E5E5E5`
-  - Primary color: `#000000`
-  - Secondary color: `#737373`
-
-- **Animated Navigation**: Smooth page transitions using `AnimatedSwitcher`
-
-- **Database**: SQLite persistence using Drift
-
-- **Clean Architecture**: Separated concerns with proper folder structure
-
-## Color Constants
-
-Colors are defined in `lib/theme/app_colors.dart` and accessible throughout the app via:
-
-```dart
-final appColors = context.appColors;
-appColors.border
-appColors.primary
-appColors.secondary
+├── constants/       # Icon metadata
+├── database/        # Drift schema & DAOs
+├── models/          # HabitModel (plain Dart, copyWith)
+├── routes/          # AnimatedRouter (AnimatedSwitcher + SlideTransition)
+├── screens/         # HabitsScreen, HabitFormScreen, HabitDetailScreen
+├── theme/           # AppTheme, AppColorScheme (ThemeExtension), app_colors.dart
+├── utils/           # color_mapper.dart, icon_mapper.dart
+└── widgets/         # Shared UI components
 ```
