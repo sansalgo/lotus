@@ -58,8 +58,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  bool get _isSelectedDateToday => _isSameDay(_selectedDate, _dayOnly(DateTime.now()));
-
   bool get _isSelectedDateFuture =>
       _selectedDate.isAfter(_dayOnly(DateTime.now()));
 
@@ -267,33 +265,39 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          PhosphorIcon(
-            PhosphorIconsDuotone.circle,
-            size: 64,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isSelectedDateFuture
-                ? 'No habits for this date yet'
-                : 'No habits yet',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.push(
+        context,
+        SlidePageRoute(page: const HabitFormScreen()),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            PhosphorIcon(
+              PhosphorIconsDuotone.circle,
+              size: 64,
+              color: Colors.grey[300],
             ),
-          ),
-          const SizedBox(height: 8),
-          if (_isSelectedDateToday || _isSelectedDateFuture)
+            const SizedBox(height: 16),
             Text(
-              'Tap the + button to create one',
+              _isSelectedDateFuture
+                  ? 'No habits for this date yet'
+                  : 'No habits yet',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap to create one',
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

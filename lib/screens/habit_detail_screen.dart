@@ -222,7 +222,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       await (_database.delete(_database.habits)
             ..where((t) => t.id.equals(_habit.id)))
           .go();
-      if (mounted) Navigator.pop(context);
+      // The stream listener fires when the row disappears and calls Navigator.pop.
     }
   }
 
