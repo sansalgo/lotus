@@ -43,6 +43,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
     // Request notification permission on first launch (best-effort).
     NotificationService.requestPermissions().catchError((_) {});
+
+    // Reschedule all reminders after the first frame so startup isn't blocked.
+    // Recovers notifications lost to battery-optimisation resets, force-stops,
+    // or anything the boot receiver doesn't cover.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _database.select(_database.habits).get().then((habits) {
+        NotificationService.rescheduleAll(habits).catchError((_) {});
+      }).catchError((_) {});
+    });
   }
 
   @override
