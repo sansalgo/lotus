@@ -101,10 +101,9 @@ class _DateCardState extends State<DateCard> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -121,7 +120,6 @@ class _DateCardState extends State<DateCard> {
                     style: const TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -2,
                     ),
                   ),
                 ],
@@ -220,29 +218,28 @@ class _DayItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseTextStyle = const TextStyle(
+    final baseTextStyle = TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.w600,
+      color: isSelected ? Colors.white : AppColors.foreground
     );
 
     final subTextStyle = TextStyle(
       fontSize: 10,
       fontWeight: FontWeight.w500,
-      letterSpacing: 0.8,
-      color: isSelected ? Colors.white70 : Colors.black54,
+      color: isSelected ? Colors.white : AppColors.chart2,
     );
 
     if (isSelected) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
         decoration: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: baseTextStyle.copyWith(color: Colors.white)),
+            Text(label, style: baseTextStyle),
             const SizedBox(height: 2),
             Text(sublabel, style: subTextStyle, softWrap: false),
           ],
