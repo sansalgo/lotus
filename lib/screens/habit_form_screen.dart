@@ -191,7 +191,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(0),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: AppColors.chart2,
                           width: 1,
                         ),
                       ),
@@ -214,7 +214,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                   TextFormField(
                     controller: _goalController,
                     style: TextStyle(fontSize: 12),
-                    maxLines: 3,
+                    maxLines: 2,
                     decoration: InputDecoration(
                       hintText:
                           'e.g. Stay consistent and build a healthier lifestyle',
@@ -230,7 +230,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(0),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: AppColors.chart2,
                           width: 1,
                         ),
                       ),
@@ -273,7 +273,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                   color: ColorMapper.getColorFromName(
                                     _selectedColor,
                                   ),
-                                  shape: BoxShape.circle,
+                                  shape: BoxShape.rectangle,
                                 ),
                               ),
                               label: _selectedColor,
@@ -318,12 +318,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                   // Submit button
                   SizedBox(
                     width: double.infinity,
+                    height: 32,
                     child: ElevatedButton(
                       onPressed: _handleSubmit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(0),
                         ),
@@ -367,7 +370,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(border: Border.all(color: AppColors.border)),
         child: Row(
           children: [
@@ -399,7 +403,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(border: Border.all(color: AppColors.border)),
         child: Row(
           children: [
@@ -477,14 +482,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: AppColors.border),
           ),
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: const EdgeInsets.all(16),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               return SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,16 +499,16 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         "Color",
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         "Pick a color to personalize this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -526,7 +532,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: entry.value,
-                                borderRadius: BorderRadius.circular(12),
                                 border: isSelected
                                     ? Border.all(
                                         color: Colors.black54,
@@ -547,12 +552,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.black,
                               side: BorderSide(color: Colors.grey[300]!),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 10,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Cancel"),
@@ -565,12 +572,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 10,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Done"),
@@ -612,14 +621,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: AppColors.border),
           ),
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: const EdgeInsets.all(16),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               return SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,26 +638,25 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         "Frequency",
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         "Set how often you want to perform this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           // Interval Input
                           Expanded(
                             flex: 2,
                             child: Container(
-                              height: 48,
+                              height: 32,
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(8),
                               ),
                               alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(
@@ -678,10 +687,9 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                           Expanded(
                             flex: 3,
                             child: Container(
-                              height: 48,
+                              height: 32,
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(8),
                               ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -725,7 +733,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         ],
                       ),
                       if (tempUnit.toLowerCase() == 'weeks') ...[
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -765,7 +773,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                             ? Colors.black
                                             : Colors.grey[300]!,
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       day,
@@ -791,12 +798,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.black,
                               side: BorderSide(color: Colors.grey[300]!),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Cancel"),
@@ -813,12 +822,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Done"),
@@ -872,14 +883,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: AppColors.border),
           ),
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: const EdgeInsets.all(16),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               return SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -888,16 +900,16 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         "Reminders",
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         "Add times when you'd like to be reminded to complete this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -917,14 +929,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                               },
                               child: Container(
                                 padding: const EdgeInsets.only(
-                                  left: 12,
-                                  right: 8,
-                                  top: 6,
-                                  bottom: 6,
+                                  left: 10,
+                                  right: 6,
+                                  top: 8,
+                                  bottom: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.border),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -933,7 +944,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                       time,
                                       style: const TextStyle(
                                         color: Colors.black87,
-                                        fontSize: 14,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -966,19 +977,17 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                   });
                                 }
                               },
-                              borderRadius: BorderRadius.circular(8),
                               child: Container(
-                                width: 40,
-                                height: 34,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   border: Border.all(color: Colors.grey[300]!),
-                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 alignment: Alignment.center,
                                 child: const Icon(
                                   Icons.add,
                                   color: Colors.black87,
-                                  size: 20,
+                                  size: 16,
                                 ),
                               ),
                             ),
@@ -993,15 +1002,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                   });
                                 }
                               },
-                              borderRadius: BorderRadius.circular(8),
                               child: Container(
-                                height: 34,
+                                height: 32,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                  horizontal: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.border),
                                 ),
                                 alignment: Alignment.center,
                                 child: Row(
@@ -1035,12 +1042,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.black,
                               side: BorderSide(color: Colors.grey[300]!),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Cancel"),
@@ -1053,12 +1062,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Done"),
@@ -1099,14 +1110,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: AppColors.border),
           ),
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: const EdgeInsets.all(16),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               return SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1115,21 +1127,20 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         "Repeat",
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         "Set how many times you want to complete this habit per period.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Container(
-                        height: 48,
+                        height: 32,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1161,12 +1172,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.black,
                               side: BorderSide(color: Colors.grey[300]!),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Cancel"),
@@ -1179,12 +1192,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
                             child: const Text("Done"),
@@ -1327,7 +1342,7 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.zero,
         side: BorderSide(color: AppColors.border),
       ),
       insetPadding: const EdgeInsets.all(16),
@@ -1341,14 +1356,14 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
               "Icon",
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               "Choose an icon that best represents this habit.",
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -1376,7 +1391,7 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(0),
-                  borderSide: BorderSide(color: AppColors.primary, width: 1),
+                  borderSide: BorderSide(color: AppColors.chart2, width: 1),
                 ),
               ),
             ),

@@ -180,7 +180,7 @@ class _WheelPicker extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE5E5E5)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.zero,
         child: Stack(
           children: [
             // ── Wheel ─────────────────────────────────────────────────
