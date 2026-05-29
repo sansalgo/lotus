@@ -157,7 +157,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   const Spacer(),
                   CircleIconButton(
                     icon: PhosphorIconsBold.plus,
-                    size: 20,
                     onTap: () => Navigator.push(
                       context,
                       SlidePageRoute(page: const HabitFormScreen()),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotus/theme/app_colors.dart';
 
 /// Shows the reps-picker dialog and returns the chosen delta (positive or
 /// negative), or null if the user cancelled.
@@ -81,10 +82,10 @@ class _RepsPickerModalState extends State<_RepsPickerModal> {
 
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0), side: BorderSide(color: AppColors.border)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +99,7 @@ class _RepsPickerModalState extends State<_RepsPickerModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _RoundButton(
+                _SquareButton(
                   icon: Icons.remove,
                   onTap: () => _nudge(-1),
                 ),
@@ -113,7 +114,7 @@ class _RepsPickerModalState extends State<_RepsPickerModal> {
                   },
                 ),
                 const SizedBox(width: 10),
-                _RoundButton(
+                _SquareButton(
                   icon: Icons.add,
                   onTap: () => _nudge(1),
                 ),
@@ -134,7 +135,7 @@ class _RepsPickerModalState extends State<_RepsPickerModal> {
                 _ActionButton(
                   label: 'Cancel',
                   onTap: () => Navigator.pop(context),
-                  style: _ActionStyle.text,
+                  style: _ActionStyle.outlined,
                 ),
                 const SizedBox(width: 6),
                 // Finish N
@@ -177,10 +178,9 @@ class _WheelPicker extends StatelessWidget {
       width: _slotWidth * 3,
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E5E5)),
-        borderRadius: BorderRadius.circular(10),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.zero,
         child: Stack(
           children: [
             // ── Wheel ─────────────────────────────────────────────────
@@ -237,24 +237,23 @@ class _WheelPicker extends StatelessWidget {
 
 // ── Small reusable widgets ────────────────────────────────────────────────────
 
-class _RoundButton extends StatelessWidget {
+class _SquareButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _RoundButton({required this.icon, required this.onTap});
+  const _SquareButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFFE5E5E5)),
         ),
-        child: Icon(icon, size: 18),
+        child: Icon(icon, size: 16),
       ),
     );
   }
@@ -275,8 +274,8 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const radius = BorderRadius.all(Radius.circular(10));
-    const padding = EdgeInsets.symmetric(horizontal: 14, vertical: 10);
+    const radius = BorderRadius.all(Radius.circular(0));
+    const padding = EdgeInsets.symmetric(horizontal: 10, vertical: 8);
     const ts = TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
 
     switch (style) {

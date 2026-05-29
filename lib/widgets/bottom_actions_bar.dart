@@ -16,7 +16,6 @@ class BottomActionsBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(

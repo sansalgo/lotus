@@ -10,7 +10,7 @@ class CircleIconButton extends StatelessWidget {
   const CircleIconButton({
     super.key,
     required this.icon,
-    this.size = 20,
+    this.size = 16,
     this.onTap,
   });
 
@@ -24,7 +24,7 @@ class CircleIconButton extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           color: Colors.white,
-          shape: BoxShape.circle,
+          shape: BoxShape.rectangle,
           border: Border.all(color: AppColors.border),
         ),
         child: PhosphorIcon(icon, size: size),

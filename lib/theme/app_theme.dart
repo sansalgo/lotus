@@ -7,7 +7,7 @@ class AppTheme {
 
   static ThemeData get lightTheme {
     return ThemeData(
-      fontFamily: 'Geist',
+      fontFamily: 'GeistMono',
       scaffoldBackgroundColor: AppColors.white,
       useMaterial3: true,
       colorScheme: ColorScheme.light(

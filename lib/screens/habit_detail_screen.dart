@@ -196,7 +196,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: const Text(
           'Delete Habit',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -350,7 +350,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(10),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -465,7 +464,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -590,7 +588,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.border),
           ),
           padding: const EdgeInsets.all(16),
@@ -668,7 +665,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               height: isEmpty ? 4 : barHeight,
               decoration: BoxDecoration(
                 color: isEmpty ? Colors.black12 : habitColor,
-                borderRadius: BorderRadius.circular(6),
               ),
             ),
             const SizedBox(height: 6),
@@ -715,9 +711,8 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
@@ -752,9 +747,8 @@ class _ReminderChipState extends State<_ReminderChip> {
 
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -841,7 +835,6 @@ class _CalendarCell extends StatelessWidget {
         decoration: (bg != null || border != null)
             ? BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(10),
                 border: border,
               )
             : null,
