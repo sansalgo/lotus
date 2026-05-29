@@ -532,13 +532,22 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: entry.value,
-                                border: isSelected
-                                    ? Border.all(
-                                        color: Colors.black54,
-                                        width: 2,
-                                      )
-                                    : null,
+                                border: Border.all(
+                                  color: Color.lerp(
+                                    entry.value,
+                                    AppColors.primary,
+                                    0.35,
+                                  )!,
+                                  width: 1,
+                                ),
                               ),
+                              child: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 18,
+                                      color: AppColors.primary,
+                                    )
+                                  : null,
                             ),
                           );
                         },

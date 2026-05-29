@@ -59,7 +59,7 @@ class HabitCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -128,7 +128,7 @@ class _CompletionButton extends StatelessWidget {
           painter: _FillPainter(
             progress: progress,
             isCompleted: isCompleted,
-            fillColor: fillColor,
+            fillColor: AppColors.primary,
           ),
           child: Center(
             child: isCompleted
@@ -197,7 +197,7 @@ class _FillPainter extends CustomPainter {
     required this.fillColor,
   });
 
-  static const _strokeWidth = 1.8;
+  static const _strokeWidth = 1.0;
   static const _inset       = _strokeWidth / 2;
 
   @override
