@@ -13,7 +13,7 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
-  static const _batteryChannel = MethodChannel('com.sansorigin.lotus/battery');
+  static const _batteryChannel = MethodChannel('com.sansalgo.lotus/battery');
 
   static const _channelId = 'lotus_habit_reminders';
   static const _channelName = 'Habit Reminders';

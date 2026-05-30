@@ -1,4 +1,4 @@
-package com.sansorigin.lotus
+package com.sansalgo.lotus
 
 import android.content.Intent
 import android.net.Uri
@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "com.sansorigin.lotus/battery",
+            "com.sansalgo.lotus/battery",
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isIgnoringBatteryOptimizations" -> {
