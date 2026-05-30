@@ -5,7 +5,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../database/app_database.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
-import '../utils/color_mapper.dart';
 import '../widgets/circle_icon_button.dart';
 import '../routes/slide_page_route.dart';
 import 'habit_form_screen.dart';
@@ -340,7 +339,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   // ── Stat cards ────────────────────────────────────────────────────────────
 
   Widget _buildStatCards(List<HabitCompletion> completions) {
-    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
+    final habitColor = AppColors.secondary;
     final streak = _streak(completions);
     final best = _bestStreak(completions);
     final finished = _finished(completions);
@@ -413,10 +412,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 2),
-          Text(sub, style: const TextStyle(fontSize: 11, color: Colors.black45)),
+          Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.chart2)),
         ],
       ),
     );
@@ -438,7 +437,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   Widget _buildCalendar(List<HabitCompletion> completions) {
     final today = _dayOnly(DateTime.now());
-    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
+    final habitColor = AppColors.secondary;
 
     // Only highlight days in the displayed month to avoid day-number collisions.
     final doneDays = completions
@@ -471,7 +470,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           // ── Month header (navigation arrows hidden for now, kept below) ──
           Text(
             '${_monthName(_calendarMonth.month)} ${_calendarMonth.year}',
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           // ignore: dead_code
           // ignore: unused_element
@@ -497,7 +496,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black45,
+                        color: AppColors.chart2,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -577,7 +576,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       children: [
         const Text(
           'Statistics',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
@@ -611,7 +610,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                         '${_selectedDate.year}',
                         style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.black54,
+                          color: AppColors.chart2,
                         ),
                       ),
                     ],
@@ -628,7 +627,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                       ),
                       const Text(
                         'Avg. repeats',
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                        style: TextStyle(fontSize: 13, color: AppColors.chart2),
                       ),
                     ],
                   ),
@@ -647,7 +646,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const maxBarHeight = 56.0;
     final barValues = _weekBarValues(completions);
-    final habitColor = ColorMapper.getColorFromName(_habit.colorName);
+    final habitColor = AppColors.primary;
     final todayIndex = _selectedDate.weekday - 1;
 
     return Row(
@@ -664,16 +663,16 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               width: 26,
               height: isEmpty ? 4 : barHeight,
               decoration: BoxDecoration(
-                color: isEmpty ? Colors.black12 : habitColor,
+                color: isEmpty ? AppColors.chart1 : habitColor,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               days[i],
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                color: isToday ? Colors.black87 : Colors.black45,
+                color: isToday ? Colors.black87 : AppColors.chart2,
               ),
             ),
           ],

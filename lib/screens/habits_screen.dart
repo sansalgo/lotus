@@ -8,11 +8,11 @@ import '../widgets/circle_icon_button.dart';
 import '../widgets/reps_picker_modal.dart';
 import '../database/app_database.dart';
 import '../utils/icon_mapper.dart';
-import '../utils/color_mapper.dart';
 import '../routes/slide_page_route.dart';
 import '../services/notification_service.dart';
 import 'habit_detail_screen.dart';
 import 'habit_form_screen.dart';
+import 'habit_template_screen.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -155,11 +155,34 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     ),
                   ),
                   const Spacer(),
+                  if (!_isSameDay(_selectedDate, _dayOnly(DateTime.now()))) ...[
+                    GestureDetector(
+                      onTap: () => setState(
+                        () => _selectedDate = _dayOnly(DateTime.now()),
+                      ),
+                      child: Container(
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Today',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   CircleIconButton(
                     icon: PhosphorIconsBold.plus,
                     onTap: () => Navigator.push(
                       context,
-                      SlidePageRoute(page: const HabitFormScreen()),
+                      SlidePageRoute(page: const HabitTemplateScreen()),
                     ),
                   ),
                 ],
@@ -262,7 +285,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
         icon: IconMapper.getIconFromName(habit.iconName),
         title: habit.name,
         subtitle: habit.goal ?? 'No goal set',
-        bgColor: ColorMapper.getColorFromName(habit.colorName),
         completedReps: completed,
         totalReps: habit.repeatCount,
         isCompleted: done,
@@ -293,16 +315,16 @@ class _HabitsScreenState extends State<HabitsScreen> {
               _isSelectedDateFuture
                   ? 'No habits for this date yet'
                   : 'No habits yet',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.chart2,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Tap to create one',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: AppColors.chart2),
             ),
           ],
         ),
@@ -327,7 +349,7 @@ class _SectionHeader extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.black45,
+            color: AppColors.chart2,
             letterSpacing: 0.3,
           ),
         ),

@@ -3,17 +3,18 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:drift/drift.dart' hide Column;
 import '../theme/app_colors.dart';
 import '../database/app_database.dart';
-import '../utils/color_mapper.dart';
 import '../utils/icon_mapper.dart';
 import '../constants/all_icons.dart';
 import '../widgets/circle_icon_button.dart';
 import '../services/notification_service.dart';
+import '../constants/habit_templates.dart';
 import 'package:fuzzy/fuzzy.dart';
 
 class HabitFormScreen extends StatefulWidget {
   final Habit? initialHabit;
+  final HabitTemplate? template;
 
-  const HabitFormScreen({super.key, this.initialHabit});
+  const HabitFormScreen({super.key, this.initialHabit, this.template});
 
   @override
   State<HabitFormScreen> createState() => _HabitFormScreenState();
@@ -25,7 +26,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   final _goalController = TextEditingController();
 
   String _selectedIcon = 'acorn';
-  String _selectedColor = 'Peach';
   String _frequency = 'Every Day';
   String _repeat = '1 Times Per Day';
 
@@ -49,7 +49,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       _nameController.text = h.name;
       _goalController.text = h.goal ?? '';
       _selectedIcon = h.iconName;
-      _selectedColor = h.colorName;
       _frequency = h.frequency;
       _repeat = h.repeat;
       _frequencyInterval = h.frequencyInterval;
@@ -59,6 +58,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           [_getTodayAbbreviation()];
       _reminders =
           h.reminders?.split(',').where((s) => s.isNotEmpty).toList() ?? [];
+    } else if (widget.template != null) {
+      final t = widget.template!;
+      _nameController.text = t.name;
+      _goalController.text = t.goal;
+      _selectedIcon = t.iconName;
+      _selectedWeekDays = [_getTodayAbbreviation()];
+      _reminders = [];
     } else {
       _selectedWeekDays = [_getTodayAbbreviation()];
       _reminders = [];
@@ -97,7 +103,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         name: Value(_nameController.text),
         goal: Value(_goalController.text.isEmpty ? null : _goalController.text),
         iconName: Value(_selectedIcon),
-        colorName: Value(_selectedColor),
         frequency: Value(_frequency),
         repeat: Value(_repeat),
         repeatCount: Value(_repeatCount),
@@ -174,115 +179,70 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                   // Name field
                   _buildSectionLabel('Name'),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _nameController,
-                    style: TextStyle(fontSize: 12),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Morning Run',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(
-                          color: AppColors.chart2,
-                          width: 1,
+                  SizedBox(
+                    height: 32,
+                    child: TextFormField(
+                      controller: _nameController,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Morning Run',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.chart2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a name';
-                      }
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 20),
                   // Goal field
                   _buildSectionLabel('Goal'),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _goalController,
-                    style: TextStyle(fontSize: 12),
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText:
-                          'e.g. Stay consistent and build a healthier lifestyle',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
-                        borderSide: BorderSide(
-                          color: AppColors.chart2,
-                          width: 1,
+                  SizedBox(
+                    height: 32,
+                    child: TextFormField(
+                      controller: _goalController,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Stay consistent and build a healthier lifestyle',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: AppColors.chart2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Icon and Color row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionLabel('Icon'),
-                            const SizedBox(height: 8),
-                            _buildSelectButton(
-                              icon: _currentIconDisplay,
-                              label: _iconToTitleCase(_selectedIcon),
-                              onTap: _showIconPicker,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionLabel('Color'),
-                            const SizedBox(height: 8),
-                            _buildSelectButton(
-                              icon: Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: ColorMapper.getColorFromName(
-                                    _selectedColor,
-                                  ),
-                                  shape: BoxShape.rectangle,
-                                ),
-                              ),
-                              label: _selectedColor,
-                              onTap: _showColorPicker,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  // Icon
+                  _buildSectionLabel('Icon'),
+                  const SizedBox(height: 8),
+                  _buildSelectButton(
+                    icon: _currentIconDisplay,
+                    label: _iconToTitleCase(_selectedIcon),
+                    onTap: _showIconPicker,
                   ),
                   const SizedBox(height: 20),
                   // Settings section
@@ -335,7 +295,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       child: Text(
                         widget.initialHabit != null ? 'Save changes' : 'Submit',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -354,8 +314,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: TextStyle(
-        fontSize: 12,
+      style: const TextStyle(
+        fontSize: 13,
         fontWeight: FontWeight.w600,
         color: AppColors.primary,
       ),
@@ -383,12 +343,12 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            const PhosphorIcon(PhosphorIconsBold.caretRight, size: 16),
+            const PhosphorIcon(PhosphorIconsBold.caretRight, size: 14),
           ],
         ),
       ),
@@ -410,7 +370,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
             const Spacer(),
             Expanded(
@@ -418,17 +378,17 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                 value,
                 textAlign: TextAlign.end,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
+                style: const TextStyle(
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: AppColors.chart2,
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            PhosphorIcon(
+            const PhosphorIcon(
               PhosphorIconsBold.caretRight,
-              size: 16,
+              size: 14,
               color: AppColors.chart2,
             ),
           ],
@@ -473,145 +433,6 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     }
   }
 
-  Future<void> _showColorPicker() async {
-    String tempColor = _selectedColor;
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-            side: BorderSide(color: AppColors.border),
-          ),
-          insetPadding: const EdgeInsets.all(16),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Color",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Pick a color to personalize this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      const SizedBox(height: 16),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 6,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                        itemCount: ColorMapper.habitColors.length,
-                        itemBuilder: (context, index) {
-                          final entry = ColorMapper.habitColors.entries
-                              .elementAt(index);
-                          final isSelected = tempColor == entry.key;
-                          return GestureDetector(
-                            onTap: () {
-                              setModalState(() {
-                                tempColor = entry.key;
-                              });
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: entry.value,
-                                border: Border.all(
-                                  color: Color.lerp(
-                                    entry.value,
-                                    AppColors.primary,
-                                    0.35,
-                                  )!,
-                                  width: 1,
-                                ),
-                              ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      size: 18,
-                                      color: AppColors.primary,
-                                    )
-                                  : null,
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: BorderSide(color: Colors.grey[300]!),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                            ),
-                            child: const Text("Cancel"),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, tempColor);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                            ),
-                            child: const Text("Done"),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedColor = result;
-      });
-    }
-  }
-
   Future<void> _showFrequencyPicker() async {
     int tempInterval = _frequencyInterval;
     String tempUnit = _frequencyUnit.isNotEmpty
@@ -646,15 +467,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       const Text(
                         "Frequency",
                         style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
+                          color: AppColors.primary,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      const Text(
                         "Set how often you want to perform this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: AppColors.chart2, fontSize: 11),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -665,7 +486,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             child: Container(
                               height: 32,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: AppColors.border),
                               ),
                               alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(
@@ -675,8 +496,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                 initialValue: tempInterval.toString(),
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
+                                  color: AppColors.primary,
+                                  fontSize: 13,
                                 ),
                                 decoration: const InputDecoration(
                                   isDense: true,
@@ -698,7 +519,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             child: Container(
                               height: 32,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: AppColors.border),
                               ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -713,8 +534,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                     color: Colors.grey,
                                   ),
                                   style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
+                                    color: AppColors.primary,
+                                    fontSize: 13,
                                   ),
                                   items: ['days', 'weeks', 'months', 'years'].map((
                                     String value,
@@ -775,21 +596,21 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? Colors.black
-                                          : Colors.white,
+                                          ? AppColors.primary
+                                          : AppColors.white,
                                       border: Border.all(
                                         color: isSelected
-                                            ? Colors.black
-                                            : Colors.grey[300]!,
+                                            ? AppColors.primary
+                                            : AppColors.border,
                                       ),
                                     ),
                                     child: Text(
                                       day,
                                       style: TextStyle(
                                         color: isSelected
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontSize: 12,
+                                            ? AppColors.white
+                                            : AppColors.primary,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -802,46 +623,40 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: BorderSide(color: Colors.grey[300]!),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.border),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Cancel"),
                             ),
-                            child: const Text("Cancel"),
                           ),
                           const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, {
-                                'interval': tempInterval,
-                                'unit': tempUnit.toLowerCase(),
-                                'days': tempDays.toList(),
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, {
+                                  'interval': tempInterval,
+                                  'unit': tempUnit.toLowerCase(),
+                                  'days': tempDays.toList(),
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Done"),
                             ),
-                            child: const Text("Done"),
                           ),
                         ],
                       ),
@@ -908,15 +723,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       const Text(
                         "Reminders",
                         style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
+                          color: AppColors.primary,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         "Add times when you'd like to be reminded to complete this habit.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: AppColors.chart2, fontSize: 11),
                       ),
                       const SizedBox(height: 16),
                       Wrap(
@@ -952,8 +767,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                     Text(
                                       time,
                                       style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -964,10 +779,10 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                           tempReminders.remove(time);
                                         });
                                       },
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: Colors.black54,
+                                      child: const PhosphorIcon(
+                                        PhosphorIconsBold.x,
+                                        size: 14,
+                                        color: AppColors.chart2,
                                       ),
                                     ),
                                   ],
@@ -990,17 +805,16 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[300]!),
+                                  border: Border.all(color: AppColors.border),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.black87,
-                                  size: 16,
+                                child: const PhosphorIcon(
+                                  PhosphorIconsBold.plus,
+                                  size: 14,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
-                          // Add new reminder full button equivalent (optional, based on design I'll stick to chips + button interaction)
                           if (tempReminders.isEmpty)
                             InkWell(
                               onTap: () async {
@@ -1020,21 +834,21 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                                   border: Border.all(color: AppColors.border),
                                 ),
                                 alignment: Alignment.center,
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Text(
                                       "Add new reminder",
                                       style: TextStyle(
-                                        color: Colors.black87,
+                                        color: AppColors.primary,
                                         fontSize: 13,
                                       ),
                                     ),
                                     SizedBox(width: 8),
-                                    Icon(
-                                      Icons.add,
-                                      color: Colors.black87,
-                                      size: 16,
+                                    PhosphorIcon(
+                                      PhosphorIconsBold.plus,
+                                      size: 14,
+                                      color: AppColors.primary,
                                     ),
                                   ],
                                 ),
@@ -1046,42 +860,36 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: BorderSide(color: Colors.grey[300]!),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.border),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Cancel"),
                             ),
-                            child: const Text("Cancel"),
                           ),
                           const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, tempReminders);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, tempReminders);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Done"),
                             ),
-                            child: const Text("Done"),
                           ),
                         ],
                       ),
@@ -1135,21 +943,21 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       const Text(
                         "Repeat",
                         style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
+                          color: AppColors.primary,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         "Set how many times you want to complete this habit per period.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: AppColors.chart2, fontSize: 11),
                       ),
                       const SizedBox(height: 16),
                       Container(
                         height: 32,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(color: AppColors.border),
                         ),
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1157,8 +965,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                           initialValue: tempTimes.toString(),
                           keyboardType: TextInputType.number,
                           style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
+                            color: AppColors.primary,
+                            fontSize: 13,
                           ),
                           decoration: const InputDecoration(
                             isDense: true,
@@ -1176,42 +984,36 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: BorderSide(color: Colors.grey[300]!),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.border),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Cancel"),
                             ),
-                            child: const Text("Cancel"),
                           ),
                           const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, tempTimes);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                          SizedBox(
+                            height: 32,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, tempTimes);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              child: const Text("Done"),
                             ),
-                            child: const Text("Done"),
                           ),
                         ],
                       ),
@@ -1364,20 +1166,20 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
             const Text(
               "Icon",
               style: TextStyle(
-                color: Colors.black,
-                fontSize: 14,
+                color: AppColors.primary,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               "Choose an icon that best represents this habit.",
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(color: AppColors.chart2, fontSize: 11),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _searchController,
-              style: TextStyle(fontSize: 12),
+              style: const TextStyle(fontSize: 13),
               decoration: InputDecoration(
                 hintText: "Search...",
                 isDense: true,
@@ -1454,40 +1256,34 @@ class _IconPickerDialogState extends State<_IconPickerDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black,
-                    side: BorderSide(color: AppColors.border),
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0),
+                SizedBox(
+                  height: 32,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.border),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
+                    child: const Text("Cancel"),
                   ),
-                  child: const Text("Cancel"),
                 ),
                 const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, _selectedIcon);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0),
+                SizedBox(
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, _selectedIcon),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
+                    child: const Text("Done"),
                   ),
-                  child: const Text("Done"),
                 ),
               ],
             ),

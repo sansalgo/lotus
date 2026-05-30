@@ -13,6 +13,8 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
+  static const _batteryChannel = MethodChannel('com.sansorigin.lotus/battery');
+
   static const _channelId = 'lotus_habit_reminders';
   static const _channelName = 'Habit Reminders';
   static const _channelDesc = 'Daily reminders for your habits';
@@ -42,6 +44,20 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: iOS),
     );
 
+    // Explicitly create the Android notification channel so it exists with the
+    // correct importance before the first notification is ever scheduled.
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelId,
+            _channelName,
+            description: _channelDesc,
+            importance: Importance.high,
+          ),
+        );
+
     _initialized = true;
   }
 
@@ -50,15 +66,43 @@ class NotificationService {
   static Future<void> requestPermissions() async {
     await _ensureInitialized();
 
+    // iOS: request alert/badge/sound permissions.
     await _plugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
-    await _plugin
+    final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      // Android 13+: runtime permission dialog for POST_NOTIFICATIONS.
+      await androidPlugin.requestNotificationsPermission();
+
+      // Android 12 (API 31–32): USE_EXACT_ALARM is not available, so
+      // SCHEDULE_EXACT_ALARM must be granted via Special App Access.
+      // canScheduleExactNotifications() returns true on API 33+ when
+      // USE_EXACT_ALARM is auto-granted, so we skip the redirect there.
+      final canExact =
+          await androidPlugin.canScheduleExactNotifications() ?? true;
+      if (!canExact) {
+        // Opens Settings > Special App Access > Alarms & Reminders for this app.
+        await androidPlugin.requestExactAlarmsPermission();
+      }
+
+      // Battery optimization: OEM power managers (Samsung One UI, Xiaomi MIUI,
+      // etc.) can kill the BroadcastReceiver before it fires, silently dropping
+      // scheduled reminders. Requesting exemption makes the app unrestricted.
+      try {
+        final isIgnoring = await _batteryChannel
+                .invokeMethod<bool>('isIgnoringBatteryOptimizations') ??
+            true;
+        if (!isIgnoring) {
+          await _batteryChannel
+              .invokeMethod('requestIgnoreBatteryOptimizations');
+        }
+      } catch (_) {}
+    }
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
