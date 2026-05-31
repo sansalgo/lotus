@@ -295,42 +295,82 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.push(
-        context,
-        SlidePageRoute(page: const HabitFormScreen()),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            PhosphorIcon(
-              PhosphorIconsDuotone.circle,
-              size: 64,
-              color: Colors.grey[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _isSelectedDateFuture
-                  ? 'No habits for this date yet'
-                  : 'No habits yet',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.chart2,
-                fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.push(
+          context,
+          SlidePageRoute(page: const HabitFormScreen()),
+        ),
+        child: CustomPaint(
+          foregroundPainter: const _DashedBorderPainter(color: AppColors.border),
+          child: SizedBox(
+            width: double.infinity,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PhosphorIcon(
+                    PhosphorIconsBold.plus,
+                    size: 28,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _isSelectedDateFuture
+                        ? 'No habits for this date yet'
+                        : 'No habits yet',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.chart2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Tap to create one',
+                    style: TextStyle(fontSize: 11, color: AppColors.chart2),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Tap to create one',
-              style: TextStyle(fontSize: 11, color: AppColors.chart2),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  const _DashedBorderPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    const dash = 5.0;
+    const gap = 4.0;
+
+    for (double x = 0; x < size.width; x += dash + gap) {
+      final end = (x + dash).clamp(0.0, size.width);
+      canvas.drawLine(Offset(x, 0), Offset(end, 0), paint);
+      canvas.drawLine(Offset(x, size.height), Offset(end, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += dash + gap) {
+      final end = (y + dash).clamp(0.0, size.height);
+      canvas.drawLine(Offset(0, y), Offset(0, end), paint);
+      canvas.drawLine(Offset(size.width, y), Offset(size.width, end), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter old) => old.color != color;
+
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
