@@ -79,10 +79,7 @@ class NotificationService {
       // Android 13+: runtime permission dialog for POST_NOTIFICATIONS.
       await androidPlugin.requestNotificationsPermission();
 
-      // Android 12 (API 31–32): USE_EXACT_ALARM is not available, so
-      // SCHEDULE_EXACT_ALARM must be granted via Special App Access.
-      // canScheduleExactNotifications() returns true on API 33+ when
-      // USE_EXACT_ALARM is auto-granted, so we skip the redirect there.
+      // SCHEDULE_EXACT_ALARM requires user approval via Special App Access on API 31+.
       final canExact =
           await androidPlugin.canScheduleExactNotifications() ?? true;
       if (!canExact) {
